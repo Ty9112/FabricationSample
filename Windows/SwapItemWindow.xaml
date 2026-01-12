@@ -1,0 +1,128 @@
+<Window x:Class="FabricationSample.Windows.SwapItemWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Swap Item" Height="550" Width="700" MinHeight="450" MinWidth="600"
+        WindowStyle="None" Background="Black" ResizeMode="CanResizeWithGrip"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown" WindowStartupLocation="CenterScreen">
+
+    <Border BorderBrush="Black" BorderThickness="1" Background="White" CornerRadius="5" Margin="2">
+        <Grid Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Title Bar -->
+            <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                <TextBlock Text="Swap Item" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Button Content="X" Width="25" Height="25" HorizontalAlignment="Right" Click="btnClose_Click"
+                        Background="Transparent" BorderThickness="0" FontWeight="Bold"/>
+            </DockPanel>
+
+            <!-- Current Item Info -->
+            <GroupBox Grid.Row="1" Header="Current Item" Margin="0,0,0,10">
+                <Grid Margin="5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" FontWeight="Bold" Margin="0,0,10,5"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1" x:Name="txtCurrentItemName" Margin="0,0,20,5"/>
+
+                    <TextBlock Grid.Row="0" Grid.Column="2" Text="Service:" FontWeight="Bold" Margin="0,0,10,5"/>
+                    <TextBlock Grid.Row="0" Grid.Column="3" x:Name="txtCurrentService" Margin="0,0,0,5"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Pattern:" FontWeight="Bold" Margin="0,0,10,0"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" x:Name="txtCurrentPattern" Margin="0,0,20,0"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="2" Text="Description:" FontWeight="Bold" Margin="0,0,10,0"/>
+                    <TextBlock Grid.Row="1" Grid.Column="3" x:Name="txtCurrentDescription" TextTrimming="CharacterEllipsis"/>
+                </Grid>
+            </GroupBox>
+
+            <!-- Main Content - TreeView and Options -->
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="200"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Service Items TreeView -->
+                <GroupBox Grid.Column="0" Header="Select New Item (Same Service)" Margin="0,0,10,0">
+                    <TreeView x:Name="tvServiceItems" Margin="5" SelectedItemChanged="tvServiceItems_SelectedItemChanged">
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate ItemsSource="{Binding Items}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{Binding Name}"/>
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                </GroupBox>
+
+                <!-- Transfer Options -->
+                <GroupBox Grid.Column="1" Header="Properties to Transfer">
+                    <StackPanel Margin="5">
+                        <CheckBox x:Name="chkTransferPosition" Content="Position (XYZ)" IsChecked="True" Margin="0,5,0,5"
+                                  ToolTip="Retain the original item's position coordinates"/>
+                        <CheckBox x:Name="chkTransferDimensions" Content="Dimensions" IsChecked="True" Margin="0,0,0,5"
+                                  ToolTip="Transfer matching dimension values"/>
+                        <CheckBox x:Name="chkTransferOptions" Content="Options" IsChecked="True" Margin="0,0,0,5"
+                                  ToolTip="Transfer matching option values"/>
+                        <CheckBox x:Name="chkTransferCustomData" Content="Custom Data" IsChecked="True" Margin="0,0,0,5"
+                                  ToolTip="Transfer custom data field values"/>
+                        <CheckBox x:Name="chkTransferBasicInfo" Content="Notes/Order/Zone/ETag" IsChecked="True" Margin="0,0,0,5"
+                                  ToolTip="Transfer notes, order, zone, equipment tag, etc."/>
+                        <CheckBox x:Name="chkTransferStatusSection" Content="Status/Section" IsChecked="True" Margin="0,0,0,5"
+                                  ToolTip="Transfer item status and section"/>
+                        <CheckBox x:Name="chkTransferPriceList" Content="Price List" IsChecked="False" Margin="0,0,0,5"
+                                  ToolTip="Transfer price list assignment"/>
+
+                        <Separator Margin="0,10,0,10"/>
+
+                        <TextBlock Text="Selected Item:" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <TextBlock x:Name="txtSelectedItem" TextWrapping="Wrap" Foreground="Blue"/>
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
+
+            <!-- Preview Info -->
+            <GroupBox Grid.Row="3" Header="Preview" Margin="0,10,0,10">
+                <Grid Margin="5">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Matching Dimensions:" FontWeight="Bold"/>
+                        <TextBlock x:Name="txtMatchingDimensions" Foreground="Green" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Matching Options:" FontWeight="Bold"/>
+                        <TextBlock x:Name="txtMatchingOptions" Foreground="Green" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+
+            <!-- Buttons -->
+            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="btnSwap" Content="Swap Item" Width="100" Height="30" Margin="0,0,10,0"
+                        Click="btnSwap_Click" IsEnabled="False"/>
+                <Button x:Name="btnCancel" Content="Cancel" Width="100" Height="30" Click="btnCancel_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

@@ -112,7 +112,9 @@
                     <Button x:Name="btnGetHandleFromFabItem" Width="100" Height="24" Content="Get Handle" Margin="200,0,0,0" Click="btnGetHandleFromFabItem_Click"/>
                 </StackPanel>
                 <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,20,0,10">
-                    <Button x:Name="btnRemoveJobItem" Width="150" Height="25" Content="Remove Item From Job" Margin="160,0,0,0" Click="btnRemoveJobItem_Click"/>
+                    <Button x:Name="btnSwapItem" Width="100" Height="25" Content="Swap Item" Margin="10,0,0,0" Click="btnSwapItem_Click" ToolTip="Swap selected item with another from the same service"/>
+                    <Button x:Name="btnUndoSwap" Width="100" Height="25" Content="Undo Swap" Margin="10,0,0,0" Click="btnUndoSwap_Click" ToolTip="Undo the last item swap"/>
+                    <Button x:Name="btnRemoveJobItem" Width="150" Height="25" Content="Remove Item From Job" Margin="30,0,0,0" Click="btnRemoveJobItem_Click"/>
                     <Button x:Name="btnSaveJob" Width="100" Height="25" Content="Save Job" Click="btnSaveJob_Click" Margin="10,0,0,0"/>
                     <Button x:Name="btnSaveJobAs" Width="100" Height="25" Content="Save Job As" Click="btnSaveJobAs_Click" Margin="10,0,0,0"/>
                     <Button x:Name="btnUpdateItems" Width="100" Height="25" HorizontalAlignment="Right" Content="Update Items" Click="btnUpdateItems_Click" Margin="10,0,0,0"/>

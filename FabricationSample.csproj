@@ -104,6 +104,11 @@
     <Compile Include="Services\Import\ImportModels.cs" />
     <Compile Include="Services\Import\PriceTableImportService.cs" />
     <!-- <Compile Include="Services\Import\ProductListImportService.cs" /> Temporarily disabled due to API type resolution issues -->
+    <Compile Include="Services\ItemSwap\ItemSwapService.cs" />
+    <Compile Include="Services\ItemSwap\ItemSwapUndoManager.cs" />
+    <Compile Include="Models\ItemPositionData.cs" />
+    <Compile Include="Models\ItemSwapUndoRecord.cs" />
+    <Compile Include="Models\ItemPropertySnapshot.cs" />
     <Compile Include="Utilities\CsvHelpers.cs" />
     <Compile Include="Utilities\FileHelpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -132,6 +137,7 @@
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-PriceLists.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Export.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Import.cs" />
+    <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-ItemSwap.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor.xaml.cs">
       <DependentUpon>DatabaseEditor.xaml</DependentUpon>
     </Compile>
@@ -275,6 +281,9 @@
     </Compile>
     <Compile Include="Windows\EditValueWindow.xaml.cs">
       <DependentUpon>EditValueWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\SwapItemWindow.xaml.cs">
+      <DependentUpon>SwapItemWindow.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -487,6 +496,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Windows\EditValueWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\SwapItemWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

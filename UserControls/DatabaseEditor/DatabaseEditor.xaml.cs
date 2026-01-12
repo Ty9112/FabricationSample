@@ -78,7 +78,8 @@ namespace FabricationSample.UserControls.DatabaseEditor
 
       private void UserControl_Loaded(object sender, RoutedEventArgs e)
       {
-
+         // Initialize item swap services
+         InitializeItemSwapServices();
       }
 
       #region BackGround Workers
