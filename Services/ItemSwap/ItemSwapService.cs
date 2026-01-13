@@ -3,7 +3,12 @@ using System.Linq;
 using Autodesk.Fabrication;
 using Autodesk.Fabrication.DB;
 using Autodesk.Fabrication.Results;
+using Autodesk.Fabrication.Geometry;
 using FabricationSample.Models;
+
+using Autodesk.AutoCAD.ApplicationServices;
+using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.Geometry;
 
 namespace FabricationSample.Services.ItemSwap
 {
@@ -129,10 +134,10 @@ namespace FabricationSample.Services.ItemSwap
                 // Step 3: Transfer properties from undo record to new item
                 result.TransferResult = ItemPropertyTransfer.TransferProperties(undoRecord, newItem, options);
 
-                // Step 4: Position the new item at the original location
-                if (options.TransferPosition && undoRecord.OriginalPosition != null)
+                // Step 4: Capture position BEFORE deleting original item
+                if (options.TransferPosition && !string.IsNullOrEmpty(undoRecord.OriginalAcadHandle))
                 {
-                    PositionItemAtLocation(newItem, undoRecord.OriginalPosition);
+                    PositionNewItemAtOriginalLocation(newItem, undoRecord.OriginalAcadHandle);
                 }
 
                 // Step 5: Delete the original item
@@ -156,13 +161,19 @@ namespace FabricationSample.Services.ItemSwap
                     return result;
                 }
 
-                // Step 7: Update undo record with new item info and push to stack
+                // Step 7: Apply pending position to the new item (after it's added to job)
+                if (options.TransferPosition && _hasPendingPosition)
+                {
+                    ApplyPendingPosition(newItem);
+                }
+
+                // Step 8: Update undo record with new item info and push to stack
                 undoRecord.NewItemUniqueId = newItem.UniqueId;
                 undoRecord.NewItemName = newItem.Name;
                 undoRecord.Description = $"Swapped '{undoRecord.OriginalItemName}' with '{newItem.Name}'";
                 _undoManager.RecordSwap(undoRecord);
 
-                // Step 8: Update the view
+                // Step 9: Update the view
                 Autodesk.Fabrication.UI.UIApplication.UpdateView(new[] { newItem }.ToList());
 
                 result.Success = true;
@@ -228,7 +239,7 @@ namespace FabricationSample.Services.ItemSwap
                 }
 
                 // Step 2: Reload the original item
-                Service service = Database.Services.FirstOrDefault(s => s.Name == undoRecord.OriginalServiceName);
+                Service service = Autodesk.Fabrication.DB.Database.Services.FirstOrDefault(s => s.Name == undoRecord.OriginalServiceName);
                 if (service == null)
                 {
                     result.Success = false;
@@ -300,12 +311,7 @@ namespace FabricationSample.Services.ItemSwap
 
                 result.TransferResult = ItemPropertyTransfer.TransferProperties(undoRecord, restoredItem, transferOptions);
 
-                // Step 4: Position at original location
-                if (undoRecord.OriginalPosition != null)
-                {
-                    PositionItemAtLocation(restoredItem, undoRecord.OriginalPosition);
-                }
-
+                // Step 4: Add to job first, then position
                 // Step 5: Add to job
                 var addResult = Job.AddItem(restoredItem);
                 if (addResult.Status != ResultStatus.Succeeded)
@@ -315,7 +321,13 @@ namespace FabricationSample.Services.ItemSwap
                     return result;
                 }
 
-                // Step 6: Update view
+                // Step 6: Position at original location (after item is added)
+                if (undoRecord.OriginalPosition != null)
+                {
+                    PositionItemAtLocation(restoredItem, undoRecord.OriginalPosition, undoRecord.OriginalAcadHandle);
+                }
+
+                // Step 7: Update view
                 Autodesk.Fabrication.UI.UIApplication.UpdateView(new[] { restoredItem }.ToList());
 
                 result.Success = true;
@@ -344,16 +356,216 @@ namespace FabricationSample.Services.ItemSwap
         }
 
         /// <summary>
-        /// Positions an item at the specified location.
+        /// Positions an item at the specified location using AutoCAD transformation.
         /// </summary>
-        private void PositionItemAtLocation(Item item, ItemPositionData position)
+        private void PositionItemAtLocation(Item newItem, ItemPositionData originalPosition, string originalHandle = null)
         {
-            // Note: Direct positioning in Fabrication API may require AutoCAD API
-            // This is a placeholder - actual implementation depends on available API methods
-            // The item will be positioned when added to the job in CADmep environment
+            if (originalPosition == null)
+                return;
 
-            // For now, we store the position data - the actual positioning would need
-            // to be done through AutoCAD's transformation commands if needed
+            try
+            {
+                // Get the AutoCAD handle of the new item after it's added to the job
+                string newHandle = Job.GetACADHandleFromItem(newItem);
+                if (string.IsNullOrEmpty(newHandle))
+                    return;
+
+                Document doc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
+                if (doc == null)
+                    return;
+
+                Autodesk.AutoCAD.DatabaseServices.Database db = doc.Database;
+
+                using (DocumentLock docLock = doc.LockDocument())
+                using (Transaction trans = db.TransactionManager.StartTransaction())
+                {
+                    // Get the new item's entity
+                    long newLn = Int64.Parse(newHandle, System.Globalization.NumberStyles.HexNumber);
+                    Handle newHn = new Handle(newLn);
+                    ObjectId newId = db.GetObjectId(false, newHn, 0);
+
+                    if (newId.IsNull || newId.IsErased)
+                    {
+                        trans.Commit();
+                        return;
+                    }
+
+                    Entity newEntity = trans.GetObject(newId, OpenMode.ForWrite) as Entity;
+                    if (newEntity == null)
+                    {
+                        trans.Commit();
+                        return;
+                    }
+
+                    // Calculate the translation vector from new item's current position to original position
+                    // Get the new item's connector position for reference
+                    Point3D newConnectorPos = default;
+                    bool hasNewConnector = false;
+                    try
+                    {
+                        if (newItem.Connectors != null && newItem.Connectors.Count > 0)
+                        {
+                            newConnectorPos = newItem.GetConnectorEndPoint(0);
+                            hasNewConnector = true;
+                        }
+                    }
+                    catch { }
+
+                    if (hasNewConnector && originalPosition.HasValidPosition)
+                    {
+                        // Create translation from current position to original position
+                        Vector3d translation = new Vector3d(
+                            originalPosition.PrimaryEndpoint.X - newConnectorPos.X,
+                            originalPosition.PrimaryEndpoint.Y - newConnectorPos.Y,
+                            originalPosition.PrimaryEndpoint.Z - newConnectorPos.Z
+                        );
+
+                        // Apply translation transformation
+                        Matrix3d transformMatrix = Matrix3d.Displacement(translation);
+                        newEntity.TransformBy(transformMatrix);
+                    }
+
+                    trans.Commit();
+                }
+            }
+            catch (Exception)
+            {
+                // Positioning failed - item will remain at default location
+                // This is non-critical, so we don't propagate the error
+            }
+        }
+
+        /// <summary>
+        /// Positions a new item at the same location as an original item using handle-based transformation.
+        /// </summary>
+        private void PositionNewItemAtOriginalLocation(Item newItem, string originalAcadHandle)
+        {
+            if (string.IsNullOrEmpty(originalAcadHandle))
+                return;
+
+            try
+            {
+                Document doc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
+                if (doc == null)
+                    return;
+
+                Autodesk.AutoCAD.DatabaseServices.Database db = doc.Database;
+
+                // Get original entity's position before it gets deleted
+                Point3d originalCenter = default;
+                bool hasOriginalCenter = false;
+
+                using (Transaction trans = db.TransactionManager.StartTransaction())
+                {
+                    long origLn = Int64.Parse(originalAcadHandle, System.Globalization.NumberStyles.HexNumber);
+                    Handle origHn = new Handle(origLn);
+                    ObjectId origId = db.GetObjectId(false, origHn, 0);
+
+                    if (!origId.IsNull && !origId.IsErased)
+                    {
+                        Entity origEntity = trans.GetObject(origId, OpenMode.ForRead) as Entity;
+                        if (origEntity != null)
+                        {
+                            // Get the geometric center of the original entity
+                            Extents3d extents = origEntity.GeometricExtents;
+                            originalCenter = new Point3d(
+                                (extents.MinPoint.X + extents.MaxPoint.X) / 2,
+                                (extents.MinPoint.Y + extents.MaxPoint.Y) / 2,
+                                (extents.MinPoint.Z + extents.MaxPoint.Z) / 2
+                            );
+                            hasOriginalCenter = true;
+                        }
+                    }
+                    trans.Commit();
+                }
+
+                // Store this for later positioning after the new item is added
+                if (hasOriginalCenter)
+                {
+                    _pendingPositionCenter = originalCenter;
+                    _hasPendingPosition = true;
+                }
+            }
+            catch (Exception)
+            {
+                // Position capture failed
+            }
+        }
+
+        // Temporary storage for positioning
+        private Point3d _pendingPositionCenter;
+        private bool _hasPendingPosition;
+
+        /// <summary>
+        /// Applies pending position to a newly added item.
+        /// </summary>
+        private void ApplyPendingPosition(Item newItem)
+        {
+            if (!_hasPendingPosition)
+                return;
+
+            try
+            {
+                string newHandle = Job.GetACADHandleFromItem(newItem);
+                if (string.IsNullOrEmpty(newHandle))
+                    return;
+
+                Document doc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
+                if (doc == null)
+                    return;
+
+                Autodesk.AutoCAD.DatabaseServices.Database db = doc.Database;
+
+                using (DocumentLock docLock = doc.LockDocument())
+                using (Transaction trans = db.TransactionManager.StartTransaction())
+                {
+                    long newLn = Int64.Parse(newHandle, System.Globalization.NumberStyles.HexNumber);
+                    Handle newHn = new Handle(newLn);
+                    ObjectId newId = db.GetObjectId(false, newHn, 0);
+
+                    if (newId.IsNull || newId.IsErased)
+                    {
+                        trans.Commit();
+                        return;
+                    }
+
+                    Entity newEntity = trans.GetObject(newId, OpenMode.ForWrite) as Entity;
+                    if (newEntity == null)
+                    {
+                        trans.Commit();
+                        return;
+                    }
+
+                    // Get new entity's current center
+                    try
+                    {
+                        Extents3d newExtents = newEntity.GeometricExtents;
+                        Point3d newCenter = new Point3d(
+                            (newExtents.MinPoint.X + newExtents.MaxPoint.X) / 2,
+                            (newExtents.MinPoint.Y + newExtents.MaxPoint.Y) / 2,
+                            (newExtents.MinPoint.Z + newExtents.MaxPoint.Z) / 2
+                        );
+
+                        // Calculate translation
+                        Vector3d translation = _pendingPositionCenter - newCenter;
+
+                        // Apply transformation
+                        Matrix3d transformMatrix = Matrix3d.Displacement(translation);
+                        newEntity.TransformBy(transformMatrix);
+                    }
+                    catch { }
+
+                    trans.Commit();
+                }
+            }
+            catch (Exception)
+            {
+                // Positioning failed
+            }
+            finally
+            {
+                _hasPendingPosition = false;
+            }
         }
 
         /// <summary>

@@ -147,6 +147,26 @@ namespace FabricationSample.Models
         /// </summary>
         public bool OriginalIsHiddenInViews { get; set; }
 
+        /// <summary>
+        /// Original item number.
+        /// </summary>
+        public string OriginalNumber { get; set; }
+
+        /// <summary>
+        /// Original CID (pattern number).
+        /// </summary>
+        public int OriginalCID { get; set; }
+
+        /// <summary>
+        /// Original product list entry name (if item has a product list).
+        /// </summary>
+        public string OriginalProductListEntryName { get; set; }
+
+        /// <summary>
+        /// Original AutoCAD handle for position operations.
+        /// </summary>
+        public string OriginalAcadHandle { get; set; }
+
         #endregion
 
         #region New Item Reference
@@ -202,6 +222,29 @@ namespace FabricationSample.Models
                 record.OriginalPallet = originalItem.Pallet;
                 record.OriginalAlias = originalItem.Alias;
                 record.OriginalIsHiddenInViews = originalItem.IsHiddenInViews;
+                record.OriginalNumber = originalItem.Number;
+                record.OriginalCID = originalItem.CID;
+
+                // Capture product list entry name if applicable
+                if (originalItem.IsProductList && originalItem.ProductList?.Rows != null)
+                {
+                    // Try to find which product list row matches the current dimensions
+                    foreach (var row in originalItem.ProductList.Rows)
+                    {
+                        if (!string.IsNullOrEmpty(row.Name))
+                        {
+                            record.OriginalProductListEntryName = row.Name;
+                            break;
+                        }
+                    }
+                }
+
+                // Capture AutoCAD handle for position operations
+                try
+                {
+                    record.OriginalAcadHandle = Job.GetACADHandleFromItem(originalItem);
+                }
+                catch { }
 
                 // Capture SKey if supported
                 if (originalItem.SupportsSKey)

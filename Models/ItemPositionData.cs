@@ -11,6 +11,11 @@ namespace FabricationSample.Models
     public class ItemPositionData
     {
         /// <summary>
+        /// Whether position data was successfully captured.
+        /// </summary>
+        public bool HasValidPosition { get; set; }
+
+        /// <summary>
         /// The primary connector endpoint (connector 0) - used as the reference position.
         /// </summary>
         public Point3D PrimaryEndpoint { get; set; }
@@ -69,6 +74,7 @@ namespace FabricationSample.Models
                     positionData.DirectionVector = item.GetConnectorDirectionVector(0);
                     positionData.WidthVector = item.GetConnectorWidthVector(0);
                     positionData.DepthVector = item.GetConnectorDepthVector(0);
+                    positionData.HasValidPosition = true;
                 }
 
                 // Capture all connector positions

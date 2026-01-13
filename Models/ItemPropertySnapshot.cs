@@ -216,9 +216,20 @@ namespace FabricationSample.Models
                 if (!string.IsNullOrEmpty(record.OriginalAlias))
                     target.Alias = record.OriginalAlias;
 
+                // Transfer item number
+                if (!string.IsNullOrEmpty(record.OriginalNumber))
+                    target.Number = record.OriginalNumber;
+
                 // Note: SKey is read-only, cannot be set
 
                 target.IsHiddenInViews = record.OriginalIsHiddenInViews;
+
+                // Transfer product list entry if applicable
+                if (!string.IsNullOrEmpty(record.OriginalProductListEntryName) &&
+                    target.IsProductList && target.ProductList?.Rows != null)
+                {
+                    TransferProductListEntry(record, target, result);
+                }
             }
             catch (Exception ex)
             {
@@ -426,6 +437,37 @@ namespace FabricationSample.Models
             catch (Exception ex)
             {
                 result.Errors.Add($"Error transferring price list: {ex.Message}");
+            }
+        }
+
+        private static void TransferProductListEntry(ItemSwapUndoRecord record, Item target, PropertyTransferResult result)
+        {
+            try
+            {
+                if (!target.IsProductList || target.ProductList?.Rows == null)
+                    return;
+
+                // Find the matching product list row by name
+                int rowIndex = -1;
+                for (int i = 0; i < target.ProductList.Rows.Count; i++)
+                {
+                    var row = target.ProductList.Rows[i];
+                    if (row.Name == record.OriginalProductListEntryName)
+                    {
+                        rowIndex = i;
+                        break;
+                    }
+                }
+
+                // If found, load that product list entry
+                if (rowIndex >= 0)
+                {
+                    target.LoadProductListEntry(rowIndex);
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Errors.Add($"Error transferring product list entry: {ex.Message}");
             }
         }
     }
