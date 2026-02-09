@@ -1,9 +1,10 @@
-﻿using Autodesk.Fabrication;
+using Autodesk.Fabrication;
 using Autodesk.Fabrication.DB;
 using Autodesk.Fabrication.Results;
 using FabricationSample.Data;
 using FabricationSample.FunctionExamples;
 using FabricationSample.Manager;
+using FabricationSample.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -28,6 +29,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
         ObservableCollection<MapProdGridItem> _lstMapProdItems;
         bool isProductDataLoaded;
         int noOfProductDefinitions;
+        int _staticColumnCount;
 
         #endregion
 
@@ -37,11 +39,9 @@ namespace FabricationSample.UserControls.DatabaseEditor
         {
             if (_lstMapProdItems == null)
             {
-                //_loadingMapProdData = true;
                 _lstMapProdItems = new ObservableCollection<MapProdGridItem>();
 
                 noOfProductDefinitions = ProductDatabase.ProductDefinitions.Count;
-                //prgMapProd.Maximum = noOfProductDefinitions;
 
                 Task getMapProdData = Task.Run(() =>
                 {
@@ -50,8 +50,6 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     {
                         _lstMapProdItems.Add(new MapProdGridItem(def));
                         step++;
-                        //Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.Background,
-                        //  new Action<int>(UpdateMapProdLoadProgress), step);
                     }
                 });
 
@@ -65,10 +63,6 @@ namespace FabricationSample.UserControls.DatabaseEditor
                 }
 
                 dgMapprod.ItemsSource = _lstMapProdItems;
-                //_loadingMapProdData = false;
-                //prgMapProd.Maximum = 1;
-                //prgMapProd.Value = 0;
-                //txtProgressMapProdLoad.Text = string.Empty;
             }
         }
 
@@ -85,7 +79,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
 
         private void btnLoadMapProd_Click(object sender, RoutedEventArgs e)
         {
-            dgMapprod.Items.Refresh();
+            ReloadProductData();
         }
 
         private void btnSave_Click(object sender, RoutedEventArgs e)
@@ -105,12 +99,61 @@ namespace FabricationSample.UserControls.DatabaseEditor
             if (!isProductDataLoaded)
             {
                 dgMapprod.ItemsSource = new ObservableCollection<ProductDefinition>(ProductDatabase.ProductDefinitions);
+                _staticColumnCount = dgMapprod.Columns.Count;
+                AddSupplierColumns();
                 isProductDataLoaded = true;
             }
             CreateProductGroupFilters();
+            CreateSupplierFilters();
             //New Product Definition Combo
             cmbNewProductDefinitionGroup.ItemsSource = new ObservableCollection<ProductGroup>(ProductDatabase.ProductGroups);
             cmbNewProductDefinitionGroup.DisplayMemberPath = "Name";
+        }
+
+        /// <summary>
+        /// Add dynamic columns for each product supplier.
+        /// Each supplier gets its own column showing the supplier ID for each product.
+        /// </summary>
+        private void AddSupplierColumns()
+        {
+            var converter = (IValueConverter)FindResource("SupplierIdsConverter");
+
+            foreach (var supplier in ProductDatabase.Suppliers)
+            {
+                var col = new DataGridTextColumn
+                {
+                    Header = supplier.Name,
+                    IsReadOnly = true,
+                    Binding = new Binding("SupplierIds")
+                    {
+                        Converter = converter,
+                        ConverterParameter = supplier.Name,
+                        Mode = BindingMode.OneWay
+                    }
+                };
+                dgMapprod.Columns.Add(col);
+            }
+        }
+
+        /// <summary>
+        /// Remove dynamic supplier columns (keeps static XAML-defined columns).
+        /// </summary>
+        private void RemoveSupplierColumns()
+        {
+            while (dgMapprod.Columns.Count > _staticColumnCount)
+                dgMapprod.Columns.RemoveAt(dgMapprod.Columns.Count - 1);
+        }
+
+        /// <summary>
+        /// Reload product data and rebuild dynamic supplier columns.
+        /// </summary>
+        private void ReloadProductData()
+        {
+            RemoveSupplierColumns();
+            dgMapprod.ItemsSource = new ObservableCollection<ProductDefinition>(ProductDatabase.ProductDefinitions);
+            AddSupplierColumns();
+            CreateProductGroupFilters();
+            CreateSupplierFilters();
         }
 
         private void CreateProductGroupFilters()
@@ -123,6 +166,17 @@ namespace FabricationSample.UserControls.DatabaseEditor
             cmbMapProdFilterGroup.SelectedIndex = 0;
         }
 
+        /// <summary>
+        /// Populate the supplier filter dropdown.
+        /// </summary>
+        private void CreateSupplierFilters()
+        {
+            var supplierNames = new List<string> { "None" };
+            supplierNames.AddRange(ProductDatabase.Suppliers.Select(s => s.Name));
+            cmbMapProdFilterSupplier.ItemsSource = new ObservableCollection<string>(supplierNames);
+            cmbMapProdFilterSupplier.SelectedIndex = 0;
+        }
+
         private void cmbMapProdFilterGroup_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (cmbMapProdFilterGroup.SelectedItem != null)
@@ -132,6 +186,32 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     dgMapprod.ItemsSource = new ObservableCollection<ProductDefinition>(ProductDatabase.ProductDefinitions);
                 else
                     dgMapprod.ItemsSource = new ObservableCollection<ProductDefinition>(ProductDatabase.ProductDefinitions.Where(x => x.Group != null && x.Group.Name == filterGroup));
+            }
+        }
+
+        /// <summary>
+        /// Filter products by supplier - shows only products that have a non-empty supplier ID for the selected supplier.
+        /// </summary>
+        private void cmbMapProdFilterSupplier_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (cmbMapProdFilterSupplier.SelectedItem == null) return;
+
+            string filterSupplier = cmbMapProdFilterSupplier.SelectedItem as string;
+            if (filterSupplier == "None")
+            {
+                dgMapprod.ItemsSource = new ObservableCollection<ProductDefinition>(ProductDatabase.ProductDefinitions);
+            }
+            else
+            {
+                var filtered = ProductDatabase.ProductDefinitions.Where(def =>
+                {
+                    if (def.SupplierIds == null) return false;
+                    return def.SupplierIds.Any(s =>
+                        s.ProductSupplier != null &&
+                        s.ProductSupplier.Name == filterSupplier &&
+                        !string.IsNullOrWhiteSpace(s.Id));
+                });
+                dgMapprod.ItemsSource = new ObservableCollection<ProductDefinition>(filtered);
             }
         }
 
@@ -214,7 +294,11 @@ namespace FabricationSample.UserControls.DatabaseEditor
                 MessageBoxImage messageImage = MessageBoxImage.Error;
 
                 if (result.Status == ResultStatus.Succeeded)
+                {
                     messageImage = MessageBoxImage.Information;
+                    // Reload to show the new supplier column
+                    ReloadProductData();
+                }
 
                 MessageBox.Show(result.Message, "Create Product Supplier", MessageBoxButton.OK, messageImage);
             }
@@ -223,5 +307,3 @@ namespace FabricationSample.UserControls.DatabaseEditor
         #endregion
     }
 }
-
-

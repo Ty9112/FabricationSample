@@ -21,6 +21,11 @@ namespace FabricationSample.Services.Import
         private bool _cancelled = false;
 
         /// <summary>
+        /// Current import options, set during Validate/Import/Preview for use by derived classes.
+        /// </summary>
+        protected ImportOptions CurrentOptions { get; private set; }
+
+        /// <summary>
         /// Validate import file before processing.
         /// </summary>
         public ValidationResult Validate(string filePath, ImportOptions options = null)
@@ -28,6 +33,7 @@ namespace FabricationSample.Services.Import
             try
             {
                 options = options ?? new ImportOptions();
+                CurrentOptions = options;
 
                 // Basic file validation
                 if (string.IsNullOrEmpty(filePath))
@@ -112,6 +118,7 @@ namespace FabricationSample.Services.Import
             try
             {
                 options = options ?? new ImportOptions();
+                CurrentOptions = options;
 
                 // First validate the file
                 var validation = Validate(filePath, options);
@@ -142,6 +149,7 @@ namespace FabricationSample.Services.Import
             {
                 _cancelled = false;
                 options = options ?? new ImportOptions();
+                CurrentOptions = options;
 
                 ReportProgress(0, 100, "Starting import...", ImportPhase.Validating);
 
@@ -319,7 +327,28 @@ namespace FabricationSample.Services.Import
         /// </summary>
         protected int FindColumnIndex(List<string> headers, string columnName)
         {
-            return headers.FindIndex(h => h.Trim().Equals(columnName, StringComparison.OrdinalIgnoreCase));
+            return FindColumnIndex(headers, columnName, null);
+        }
+
+        /// <summary>
+        /// Helper to find column index by name (case-insensitive).
+        /// If a column mapping exists in options, uses the mapped name instead.
+        /// Returns -1 if not found.
+        /// </summary>
+        protected int FindColumnIndex(List<string> headers, string columnName, ImportOptions options)
+        {
+            string actualColumnName = columnName;
+
+            if (options?.CustomSettings != null &&
+                options.CustomSettings.TryGetValue(ColumnMappingConfig.SettingsKey, out object mappingObj) &&
+                mappingObj is ColumnMappingConfig mapping)
+            {
+                var mapped = mapping.GetMappedColumnName(columnName);
+                if (mapped != null)
+                    actualColumnName = mapped;
+            }
+
+            return headers.FindIndex(h => h.Trim().Equals(actualColumnName, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -327,11 +356,19 @@ namespace FabricationSample.Services.Import
         /// </summary>
         protected ValidationResult ValidateRequiredColumns(List<string> headers, params string[] requiredColumns)
         {
+            return ValidateRequiredColumns(headers, null, requiredColumns);
+        }
+
+        /// <summary>
+        /// Helper to check if required columns exist, with column mapping support.
+        /// </summary>
+        protected ValidationResult ValidateRequiredColumns(List<string> headers, ImportOptions options, params string[] requiredColumns)
+        {
             var result = new ValidationResult { IsValid = true };
 
             foreach (var required in requiredColumns)
             {
-                if (FindColumnIndex(headers, required) == -1)
+                if (FindColumnIndex(headers, required, options) == -1)
                 {
                     result.Errors.Add(new ValidationError(1, $"Required column '{required}' not found in header"));
                     result.IsValid = false;
@@ -347,7 +384,16 @@ namespace FabricationSample.Services.Import
         /// </summary>
         protected string GetFieldValue(List<string> headers, List<string> fields, string columnName)
         {
-            int index = FindColumnIndex(headers, columnName);
+            return GetFieldValue(headers, fields, columnName, null);
+        }
+
+        /// <summary>
+        /// Helper to get field value by column name, with column mapping support.
+        /// Returns empty string if column not found.
+        /// </summary>
+        protected string GetFieldValue(List<string> headers, List<string> fields, string columnName, ImportOptions options)
+        {
+            int index = FindColumnIndex(headers, columnName, options);
             if (index >= 0 && index < fields.Count)
                 return fields[index];
             return string.Empty;

@@ -542,6 +542,84 @@ namespace FabricationSample.Commands
             }
         }
 
+        /// <summary>
+        /// Export service template data including button codes and item assignments.
+        /// Creates a CSV matching the [MG - 1]_TemplateData.csv format with services,
+        /// buttons, button codes, and up to 4 item paths with conditions per button.
+        /// </summary>
+        [CommandMethod("GetServiceTemplateData")]
+        public static void GetServiceTemplateData()
+        {
+            try
+            {
+                if (!ValidateFabricationLoaded())
+                    return;
+
+                Princ("Starting service template data export...");
+
+                // Show service selection dialog
+                var selectionWindow = new ServiceSelectionWindow();
+                selectionWindow.ShowDialog();
+
+                if (!selectionWindow.DialogResultOk)
+                {
+                    Princ("Export cancelled: No services selected.");
+                    return;
+                }
+
+                var selectedServices = selectionWindow.SelectedServiceNames;
+                Princ($"Selected {selectedServices.Count} service(s) for export.");
+
+                string exportFolder = PromptForExportLocation("Service Template Data");
+                if (string.IsNullOrEmpty(exportFolder))
+                {
+                    Princ("Export cancelled: No folder selected.");
+                    return;
+                }
+
+                string exportPath = GenerateTimestampedPath(exportFolder, "TemplateData");
+
+                Princ("Generating service template data CSV...");
+                var exportService = new ServiceTemplateDataExportService
+                {
+                    SelectedServiceNames = selectedServices
+                };
+
+                exportService.ProgressChanged += (sender, args) =>
+                {
+                    Princ($"  {args.Message}");
+                };
+
+                var options = new ExportOptions
+                {
+                    IncludeHeader = true,
+                    OpenAfterExport = true
+                };
+
+                var result = exportService.Export(exportPath, options);
+
+                if (result.IsSuccess)
+                {
+                    Princ($"Export complete: {result.RowCount} rows exported to {exportPath}");
+                    ShowSuccess(result.FilePath, result.RowCount);
+                }
+                else if (result.WasCancelled)
+                {
+                    Princ("Export was cancelled by user.");
+                    MessageBox.Show("Export was cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    ShowError($"Export failed: {result.ErrorMessage}");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ShowError($"Unexpected error: {ex.Message}");
+                LogError("GetServiceTemplateData", ex);
+            }
+        }
+
         #endregion
     }
 }

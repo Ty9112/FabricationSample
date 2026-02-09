@@ -69,10 +69,16 @@ namespace FabricationSample
 
     }
 
-    public void LoadDBEditorControl()
+    public void LoadDBEditorControl(string selectTab = null)
     {
       FabricationManager.DBEditor = new DatabaseEditor();
       ControlHost.Content = FabricationManager.DBEditor;
+
+      // Select specific tab if requested
+      if (!string.IsNullOrEmpty(selectTab) && FabricationManager.DBEditor != null)
+      {
+        FabricationManager.DBEditor.SelectTab(selectTab);
+      }
     }
 
     public void LoadItemEditorControl()

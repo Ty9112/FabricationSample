@@ -5,6 +5,7 @@ using System.Windows.Forms;
 using Autodesk.AutoCAD.Runtime;
 using Autodesk.Fabrication.Content;
 using FabricationSample.Manager;
+using FabricationSample.ProfileCopy.Windows;
 using FabricationSample.Services.Import;
 using FabricationSample.Utilities;
 using CADapp = Autodesk.AutoCAD.ApplicationServices.Application;
@@ -386,6 +387,39 @@ namespace FabricationSample.Commands
             {
                 ShowError($"Unexpected error: {ex.Message}");
                 LogError("ImportPriceList", ex);
+            }
+        }
+
+        /// <summary>
+        /// Opens the Profile Data Copy window to copy database configuration from another Fabrication profile.
+        /// Copies .map files from a source profile to the current profile with automatic backup.
+        /// </summary>
+        [CommandMethod("ImportProfileData")]
+        public static void ImportProfileData()
+        {
+            try
+            {
+                if (!ValidateFabricationLoaded())
+                    return;
+
+                Princ("Opening Profile Data Copy...");
+
+                var window = new ProfileDataCopyWindow();
+                var result = window.ShowDialog();
+
+                if (result == true)
+                {
+                    Princ("Profile data copy completed. Please restart AutoCAD for changes to take effect.");
+                }
+                else
+                {
+                    Princ("Profile data copy cancelled.");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ShowError($"Unexpected error: {ex.Message}");
+                LogError("ImportProfileData", ex);
             }
         }
 

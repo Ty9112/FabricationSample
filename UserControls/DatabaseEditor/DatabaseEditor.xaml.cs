@@ -74,6 +74,23 @@ namespace FabricationSample.UserControls.DatabaseEditor
          _bgwInstallationtimes.RunWorkerCompleted += _bgwInstallationtimes_RunWorkerCompleted;
       }
 
+      /// <summary>
+      /// Select a specific tab by name
+      /// </summary>
+      public void SelectTab(string tabName)
+      {
+         switch (tabName)
+         {
+            case "Services":
+               tbBody.SelectedItem = tbiServices;
+               break;
+            case "ServiceTemplates":
+               tbBody.SelectedItem = tbiServiceTemplates;
+               break;
+            // Add more cases as needed
+         }
+      }
+
       #endregion
 
       private void UserControl_Loaded(object sender, RoutedEventArgs e)
@@ -837,6 +854,24 @@ namespace FabricationSample.UserControls.DatabaseEditor
             child = VisualTreeHelper.GetParent(child);
          }
          return child as T;
+      }
+
+      /// <summary>
+      /// Handle mouse wheel scrolling for ScrollViewers
+      /// </summary>
+      private void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+      {
+          if (sender is ScrollViewer scrollViewer)
+          {
+              // Calculate scroll amount (3 lines per wheel notch)
+              double scrollAmount = -e.Delta / 3.0;
+
+              // Scroll the viewer
+              scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset + scrollAmount);
+
+              // Mark event as handled to prevent parent controls from scrolling
+              e.Handled = true;
+          }
       }
 
 

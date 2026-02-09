@@ -5,8 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="270" d:DesignWidth="650" Loaded="UserControl_Loaded" Unloaded="UserControl_Unloaded">
-  <StackPanel Orientation="Vertical">
-    <DataGrid x:Name="dgPrices" Height="270" VerticalAlignment="Top" AutoGenerateColumns="False" SelectionMode="Single">
+  <Grid>
+    <DataGrid x:Name="dgPrices" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" AutoGenerateColumns="False" SelectionMode="Single">
       <DataGrid.Columns>
         <DataGridTextColumn IsReadOnly="True" Binding="{Binding Entry.DatabaseId}" Header="DatabaseId" Width="150"/>
         <DataGridTextColumn Binding="{Binding ProductEntryValue,Mode=TwoWay,UpdateSourceTrigger=LostFocus}" Header="Value" Width="100"/>
@@ -51,6 +51,6 @@
       </DataGrid.Resources>
     </DataGrid>
 
-  </StackPanel>
+  </Grid>
 
 </UserControl>

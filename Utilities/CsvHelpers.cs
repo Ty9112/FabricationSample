@@ -174,6 +174,25 @@ namespace FabricationSample.Utilities
         }
 
         /// <summary>
+        /// Format values for CSV output WITHOUT quotes (comma-separated only).
+        /// Warning: This will break if values contain commas. Use only when data is clean.
+        /// </summary>
+        /// <param name="values">Array of values to join</param>
+        /// <returns>Comma-separated string without quotes</returns>
+        public static string FormatUnquotedCsv(params object[] values)
+        {
+            if (values == null || values.Length == 0)
+                return "N/A";
+
+            return string.Join(",", values.Select(v =>
+            {
+                string val = v?.ToString() ?? "N/A";
+                // Replace commas with spaces to avoid breaking CSV structure
+                return val.Replace(",", " ");
+            }));
+        }
+
+        /// <summary>
         /// Sanitize a filename by replacing invalid characters.
         /// </summary>
         /// <param name="fileName">The filename to sanitize</param>

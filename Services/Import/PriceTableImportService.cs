@@ -37,8 +37,8 @@ namespace FabricationSample.Services.Import
         /// </summary>
         protected override ValidationResult ValidateColumns(List<string> headers)
         {
-            // Check for required columns
-            var result = ValidateRequiredColumns(headers, "DatabaseId", "Cost");
+            // Check for required columns using mapped names if available
+            var result = ValidateRequiredColumns(headers, CurrentOptions, "DatabaseId", "Cost");
             return result;
         }
 
@@ -50,7 +50,7 @@ namespace FabricationSample.Services.Import
             var result = new ValidationResult { IsValid = true };
 
             // Validate DatabaseId
-            var databaseId = GetFieldValue(headers, fields, "DatabaseId");
+            var databaseId = GetFieldValue(headers, fields, "DatabaseId", CurrentOptions);
             if (string.IsNullOrWhiteSpace(databaseId))
             {
                 result.Errors.Add(new ValidationError(lineNumber, "DatabaseId cannot be empty"));
@@ -58,7 +58,7 @@ namespace FabricationSample.Services.Import
             }
 
             // Validate Cost
-            var costStr = GetFieldValue(headers, fields, "Cost");
+            var costStr = GetFieldValue(headers, fields, "Cost", CurrentOptions);
             if (!TryParseDouble(costStr, out double cost))
             {
                 result.Errors.Add(new ValidationError(lineNumber, $"Invalid cost value: '{costStr}'"));
@@ -71,7 +71,7 @@ namespace FabricationSample.Services.Import
             }
 
             // Validate Status if present
-            var status = GetFieldValue(headers, fields, "Status");
+            var status = GetFieldValue(headers, fields, "Status", CurrentOptions);
             if (!string.IsNullOrWhiteSpace(status))
             {
                 if (!status.Equals("Active", StringComparison.OrdinalIgnoreCase) &&
@@ -106,8 +106,8 @@ namespace FabricationSample.Services.Import
                     continue;
 
                 var fields = ParseCsvLine(line, options.Delimiter);
-                var databaseId = GetFieldValue(headers, fields, "DatabaseId");
-                var cost = GetFieldValue(headers, fields, "Cost");
+                var databaseId = GetFieldValue(headers, fields, "DatabaseId", options);
+                var cost = GetFieldValue(headers, fields, "Cost", options);
 
                 // Check if entry already exists
                 var existingEntry = _priceList.Products.FirstOrDefault(p =>
@@ -173,12 +173,12 @@ namespace FabricationSample.Services.Import
 
             try
             {
-                // Get column indices
-                int dbIdIndex = FindColumnIndex(headers, "DatabaseId");
-                int costIndex = FindColumnIndex(headers, "Cost");
-                int discountIndex = FindColumnIndex(headers, "DiscountCode");
-                int unitsIndex = FindColumnIndex(headers, "Units");
-                int statusIndex = FindColumnIndex(headers, "Status");
+                // Get column indices (using mapped names if available)
+                int dbIdIndex = FindColumnIndex(headers, "DatabaseId", options);
+                int costIndex = FindColumnIndex(headers, "Cost", options);
+                int discountIndex = FindColumnIndex(headers, "DiscountCode", options);
+                int unitsIndex = FindColumnIndex(headers, "Units", options);
+                int statusIndex = FindColumnIndex(headers, "Status", options);
 
                 int startLine = options.HasHeaderRow ? 1 : 0;
                 int totalRows = lines.Count - startLine;

@@ -225,17 +225,29 @@ namespace FabricationSample.Models
                 record.OriginalNumber = originalItem.Number;
                 record.OriginalCID = originalItem.CID;
 
-                // Capture product list entry name if applicable
+                // Capture product list entry info if applicable
+                // Use the item's DatabaseId to identify the correct product list row
                 if (originalItem.IsProductList && originalItem.ProductList?.Rows != null)
                 {
-                    // Try to find which product list row matches the current dimensions
-                    foreach (var row in originalItem.ProductList.Rows)
+                    // The item's DatabaseId should match the product list row's DatabaseId
+                    string itemDbId = originalItem.DatabaseId;
+                    if (!string.IsNullOrEmpty(itemDbId))
                     {
-                        if (!string.IsNullOrEmpty(row.Name))
+                        foreach (var row in originalItem.ProductList.Rows)
                         {
-                            record.OriginalProductListEntryName = row.Name;
-                            break;
+                            if (row.DatabaseId == itemDbId)
+                            {
+                                record.OriginalProductListEntryName = row.Name;
+                                break;
+                            }
                         }
+                    }
+
+                    // If no match by DatabaseId, try matching by dimensions (fallback)
+                    if (string.IsNullOrEmpty(record.OriginalProductListEntryName))
+                    {
+                        // Store the item's name as it appears (this is the product size name)
+                        record.OriginalProductListEntryName = originalItem.Name;
                     }
                 }
 

@@ -5,6 +5,7 @@ using System.Linq;
 using Autodesk.Fabrication.DB;
 using FabricationSample.Utilities;
 using FabDB = Autodesk.Fabrication.DB.Database;
+// Note: PriceTableItem is defined in FabricationSample namespace (in PriceTableSelectionWindow.xaml.cs)
 
 namespace FabricationSample.Services.Export
 {
@@ -18,6 +19,11 @@ namespace FabricationSample.Services.Export
         /// Event raised to report progress during export.
         /// </summary>
         public event EventHandler<ProgressEventArgs> ProgressChanged;
+
+        /// <summary>
+        /// List of selected price tables to export. If null or empty, all tables are exported.
+        /// </summary>
+        public List<PriceTableItem> SelectedTables { get; set; }
 
         private bool _cancelled = false;
 
@@ -70,6 +76,15 @@ namespace FabricationSample.Services.Export
                     foreach (var list in group.PriceLists)
                     {
                         var listName = list.Name;
+
+                        // Skip if selective export and this table is not selected
+                        if (SelectedTables != null && SelectedTables.Count > 0)
+                        {
+                            bool isSelected = SelectedTables.Any(t =>
+                                t.SupplierGroupName == groupName && t.PriceListName == listName);
+                            if (!isSelected)
+                                continue;
+                        }
 
                         // Handle simple price lists
                         if (list is PriceList priceList)

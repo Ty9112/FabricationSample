@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace FabricationSample.Services.Import
 {
@@ -408,5 +409,105 @@ namespace FabricationSample.Services.Import
         Parsing,
         Importing,
         Complete
+    }
+
+    /// <summary>
+    /// Defines column mapping configuration for CSV import.
+    /// Maps expected field names to actual CSV column names.
+    /// Stored in ImportOptions.CustomSettings under SettingsKey.
+    /// </summary>
+    public class ColumnMappingConfig
+    {
+        /// <summary>
+        /// Key for storing this config in ImportOptions.CustomSettings.
+        /// </summary>
+        public const string SettingsKey = "ColumnMapping";
+
+        /// <summary>
+        /// Maps expected field name -> actual CSV column name.
+        /// E.g., "DatabaseId" -> "Product ID"
+        /// </summary>
+        public Dictionary<string, string> Mappings { get; set; } = new Dictionary<string, string>();
+
+        /// <summary>
+        /// Get the actual CSV column name for an expected field.
+        /// Returns null if not mapped.
+        /// </summary>
+        public string GetMappedColumnName(string expectedFieldName)
+        {
+            if (Mappings.TryGetValue(expectedFieldName, out string actualName))
+                return actualName;
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// ViewModel for a single field mapping in the ColumnMappingWindow.
+    /// </summary>
+    public class ColumnMappingField : INotifyPropertyChanged
+    {
+        private string _selectedCsvColumn;
+        private bool _isSkipped;
+
+        /// <summary>
+        /// The expected field name (e.g., "DatabaseId", "Cost").
+        /// </summary>
+        public string FieldName { get; set; }
+
+        /// <summary>
+        /// Whether this field is required for import.
+        /// </summary>
+        public bool IsRequired { get; set; }
+
+        /// <summary>
+        /// Display label shown to the user.
+        /// </summary>
+        public string DisplayLabel => IsRequired ? $"{FieldName} *" : FieldName;
+
+        /// <summary>
+        /// Whether this field should be skipped (set to "-- Skip --").
+        /// Only applies to optional fields.
+        /// </summary>
+        public bool IsSkipped
+        {
+            get => _isSkipped;
+            set
+            {
+                if (_isSkipped != value)
+                {
+                    _isSkipped = value;
+                    OnPropertyChanged(nameof(IsSkipped));
+                    OnPropertyChanged(nameof(IsComboEnabled));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether the combo box should be enabled (not skipped and not required to skip).
+        /// </summary>
+        public bool IsComboEnabled => !IsSkipped;
+
+        /// <summary>
+        /// The CSV column selected by the user to map to this field.
+        /// </summary>
+        public string SelectedCsvColumn
+        {
+            get => _selectedCsvColumn;
+            set
+            {
+                if (_selectedCsvColumn != value)
+                {
+                    _selectedCsvColumn = value;
+                    OnPropertyChanged(nameof(SelectedCsvColumn));
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

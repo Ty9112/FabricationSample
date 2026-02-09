@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Threading;
 using Autodesk.Fabrication;
 using FabricationSample.Services.ItemSwap;
 using FabricationSample.Windows;
@@ -26,10 +27,19 @@ namespace FabricationSample.UserControls.DatabaseEditor
 
         /// <summary>
         /// Handles the undo stack changed event to update button state.
+        /// Uses Dispatcher to ensure UI updates happen on the correct thread.
         /// </summary>
         private void UndoManager_UndoStackChanged(object sender, System.EventArgs e)
         {
-            UpdateUndoButtonState();
+            // Use Dispatcher to ensure UI updates happen on the UI thread
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(() => UpdateUndoButtonState());
+            }
+            else
+            {
+                UpdateUndoButtonState();
+            }
         }
 
         /// <summary>
@@ -37,6 +47,13 @@ namespace FabricationSample.UserControls.DatabaseEditor
         /// </summary>
         private void UpdateUndoButtonState()
         {
+            // Ensure we're on the UI thread
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(() => UpdateUndoButtonState());
+                return;
+            }
+
             if (btnUndoSwap != null)
             {
                 btnUndoSwap.IsEnabled = _undoManager?.CanUndo ?? false;

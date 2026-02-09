@@ -5,6 +5,7 @@ using System.Linq;
 using Autodesk.Fabrication.DB;
 using FabricationSample.Utilities;
 using FabDB = Autodesk.Fabrication.DB.Database;
+// Note: InstallTableItem is defined in FabricationSample namespace (in InstallTableSelectionWindow.xaml.cs)
 
 namespace FabricationSample.Services.Export
 {
@@ -18,6 +19,11 @@ namespace FabricationSample.Services.Export
         /// Event raised to report progress during export.
         /// </summary>
         public event EventHandler<ProgressEventArgs> ProgressChanged;
+
+        /// <summary>
+        /// List of selected installation tables to export. If null or empty, all tables are exported.
+        /// </summary>
+        public List<InstallTableItem> SelectedTables { get; set; }
 
         private bool _cancelled = false;
 
@@ -79,6 +85,15 @@ namespace FabricationSample.Services.Export
                         var tableGroup = table.Group ?? "N/A";
                         var tableType = table.Type.ToString();
                         var tableClass = table.GetType().Name;
+
+                        // Skip if selective export and this table is not selected
+                        if (SelectedTables != null && SelectedTables.Count > 0)
+                        {
+                            bool isSelected = SelectedTables.Any(t =>
+                                t.TableName == tableName && t.TableGroup == (table.Group ?? string.Empty));
+                            if (!isSelected)
+                                continue;
+                        }
 
                         // Try casting to specific types
                         var asSimple = table as InstallationTimesTable;

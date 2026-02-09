@@ -1,0 +1,77 @@
+<Window x:Class="FabricationSample.ProfileCopy.Windows.DataTypePreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Preview" Height="500" Width="420" MinHeight="350" MinWidth="320"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#0696D7"/>
+    </Window.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock x:Name="txtHeader" Grid.Row="0" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,8"
+                   Foreground="#333333"/>
+
+        <!-- Tier 2 warning banner (hidden by default) -->
+        <Border x:Name="pnlTier2Warning" Grid.Row="1" Background="#FFF8E1" BorderBrush="#FFE082"
+                BorderThickness="1" CornerRadius="3" Padding="8" Margin="0,0,0,8" Visibility="Collapsed">
+            <TextBlock FontSize="11" Foreground="#F57F17" TextWrapping="Wrap">
+                <Run FontWeight="SemiBold">Note:</Run>
+                <Run>This data type does not support selective cleanup. The entire file will be copied.</Run>
+            </TextBlock>
+        </Border>
+
+        <!-- Quick select buttons -->
+        <WrapPanel Grid.Row="2" Margin="0,0,0,6">
+            <TextBlock Text="Quick Select:" VerticalAlignment="Center" Margin="0,0,8,0"
+                       FontSize="11" Foreground="#666666"/>
+            <Button Content="Select All" MinWidth="80" Height="24" Click="btnSelectAll_Click"
+                    Margin="0,0,5,0"/>
+            <Button Content="Select None" MinWidth="90" Height="24" Click="btnSelectNone_Click"/>
+        </WrapPanel>
+
+        <!-- Items list with grouping -->
+        <ListView x:Name="lstItems" Grid.Row="3" BorderThickness="1" BorderBrush="#D0D0D0"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListView.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,2">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
+                                           Foreground="{StaticResource PrimaryBrush}"/>
+                                <TextBlock Text="{Binding ItemCount, StringFormat=' ({0})'}" FontSize="11"
+                                           Foreground="#999999" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                </GroupStyle>
+            </ListView.GroupStyle>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="2"
+                              VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontSize="12"/>
+                    </CheckBox>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="btnApply" Content="Apply Selection" Width="120" Height="28"
+                    Click="btnApply_Click" IsDefault="True"/>
+            <Button Content="Cancel" Width="80" Height="28" Margin="8,0,0,0"
+                    Click="btnCancel_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -5,13 +5,19 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="460" d:DesignWidth="780" Loaded="UserControl_Loaded">
-  <StackPanel>
-    <DockPanel  DockPanel.Dock="top"  VerticalAlignment="Top" Margin="5,0,0,0">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <DockPanel Grid.Row="0" DockPanel.Dock="top" VerticalAlignment="Top" Margin="5,0,0,0">
       <TextBlock x:Name="txtServiceGroup" TextWrapping="Wrap" Width="350" Text="Service Group:" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="5" />
       <TextBlock x:Name="txtServiceName" TextWrapping="Wrap" Width="350" Text="Service Name: " VerticalAlignment="Top" HorizontalAlignment="Left" Margin="5" />
     </DockPanel>
-    <StackPanel>
-      <TabControl x:Name="tbBody"  VerticalAlignment="Top" TabStripPlacement="Left" Height="392" Margin="0,0,0,15">
+
+    <TabControl Grid.Row="1" x:Name="tbBody" VerticalAlignment="Stretch" TabStripPlacement="Left" Margin="0,5,0,5">
         <TabControl.Resources>
           <Style TargetType="TabItem">
             <Setter Property="Template">
@@ -38,66 +44,146 @@
             </Setter>
           </Style>
         </TabControl.Resources>
-        <TabItem x:Name="tbiServiceEntries" Header="Service Entries">
-          <StackPanel>
-            <StackPanel Orientation="Horizontal" >
-              <Button Content="Add Service Entry" Click="newServiceEntry_Click" Width="120" VerticalAlignment="Center"/>
+        <TabItem x:Name="tbiServiceInfo" Header="Service Information" Loaded="tbiServiceInfo_Loaded">
+          <Grid Margin="10">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="150"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Service Name -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Service Name:" VerticalAlignment="Center"/>
+            <TextBox x:Name="txtInfoServiceName" Grid.Row="0" Grid.Column="1" Height="25" Width="300" HorizontalAlignment="Left" Margin="0,5"/>
+
+            <!-- Service Group -->
+            <Label Grid.Row="1" Grid.Column="0" Content="Service Group:" VerticalAlignment="Center"/>
+            <TextBox x:Name="txtInfoServiceGroup" Grid.Row="1" Grid.Column="1" Height="25" Width="300" HorizontalAlignment="Left" Margin="0,5"/>
+
+            <!-- Service Template -->
+            <Label Grid.Row="2" Grid.Column="0" Content="Service Template:" VerticalAlignment="Center"/>
+            <ComboBox x:Name="cmbInfoServiceTemplate" Grid.Row="2" Grid.Column="1" Height="25" Width="300" HorizontalAlignment="Left" Margin="0,5"
+                      SelectionChanged="cmbInfoServiceTemplate_SelectionChanged" DisplayMemberPath="Name"/>
+
+            <!-- Specification -->
+            <Label Grid.Row="3" Grid.Column="0" Content="Specification:" VerticalAlignment="Center"/>
+            <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,5">
+              <ComboBox x:Name="cmbInfoSpecification" Height="25" Width="250"
+                        SelectionChanged="cmbInfoSpecification_SelectionChanged" DisplayMemberPath="Name"/>
+              <CheckBox x:Name="chkInfoSpecNotSet" Content="Not Set" VerticalAlignment="Center" Margin="10,0,0,0"
+                        Click="chkInfoSpecNotSet_Click"/>
             </StackPanel>
-            <ScrollViewer HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Auto">
-              <DataGrid x:Name="dgServiceEntries" VerticalAlignment="Top" CanUserSortColumns="True" Margin="0,10,0,0"
-                    AutoGenerateColumns="False" Loaded="dgServiceEntries_Loaded" ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                        VerticalScrollBarVisibility="Hidden" CanUserAddRows="True" CanUserDeleteRows="False" 
-                        SelectionMode="Single">
+
+            <!-- Save Button -->
+            <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,20,0,0">
+              <Button x:Name="btnSaveServiceInfo" Content="Save Service Info" Width="120" Height="25" Click="btnSaveServiceInfo_Click"/>
+            </StackPanel>
+          </Grid>
+        </TabItem>
+
+        <TabItem x:Name="tbiServiceEntries" Header="Service Entries">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="*"/>
+              <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Service Selector -->
+            <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,10">
+              <Label Content="Select Services (multi-select):" FontWeight="Bold"/>
+              <Border BorderBrush="Gray" BorderThickness="1" Height="120">
+                <ScrollViewer x:Name="svServiceSelector" VerticalScrollBarVisibility="Auto"
+                              PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
+                  <ListBox x:Name="lstServiceSelector" SelectionMode="Multiple"
+                           SelectionChanged="lstServiceSelector_SelectionChanged"
+                           DisplayMemberPath="Name"/>
+                </ScrollViewer>
+              </Border>
+              <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <Button Content="Select All" Width="80" Click="btnSelectAllServices_Click" Margin="0,0,5,0"/>
+                <Button Content="Deselect All" Width="80" Click="btnDeselectAllServices_Click"/>
+              </StackPanel>
+            </StackPanel>
+
+            <!-- Action Buttons -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,10">
+              <Button Content="Add Service Entry" Click="newServiceEntry_Click" Width="120" VerticalAlignment="Center"/>
+              <Button Content="Export Service Entries" Click="btnExportServiceEntries_Click" Width="160" VerticalAlignment="Center" Margin="10,0,0,0"/>
+              <Button Content="Import Service Entries" Click="btnImportServiceEntries_Click" Width="160" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            </StackPanel>
+
+            <!-- Service Entries Grid with Scrolling -->
+            <ScrollViewer x:Name="svServiceEntries" Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                          PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
+              <DataGrid x:Name="dgServiceEntries" VerticalAlignment="Stretch" CanUserSortColumns="True"
+                    AutoGenerateColumns="False" Loaded="dgServiceEntries_Loaded"
+                    CanUserAddRows="False" CanUserDeleteRows="False"
+                    SelectionMode="Single" IsReadOnly="True">
                 <DataGrid.Columns>
-                  <DataGridComboBoxColumn Header="Service Type" Width="120" x:Name="cmbServiceType"
-                                      TextBinding="{Binding ServiceTypeDescription}"
-                                      DisplayMemberPath="Description">
-
-                    <DataGridComboBoxColumn.EditingElementStyle>
-                      <Style TargetType="{x:Type ComboBox}">
-                        <EventSetter Event="SelectionChanged" Handler="ServiceTypeComboChanged" />
-                      </Style>
-                    </DataGridComboBoxColumn.EditingElementStyle>
-
-                  </DataGridComboBoxColumn>
-
-                  <DataGridTextColumn Header="Layer Tag 1" Width="130" Binding="{Binding LayerTag1}"/>
-                  <DataGridTextColumn Header="Layer Tag 2" Width="130" Binding="{Binding LayerTag2}"/>
-
-                  <DataGridComboBoxColumn x:Name="cmbLayerColor" Header="Layer Color" Width="70" SelectedItemBinding="{Binding LayerColor}"/>
-
-                  <DataGridTextColumn Header="Level Block" Width="100" Binding="{Binding LevelBlock}"/>
-                  <DataGridCheckBoxColumn Header="Insulation" Width="70" Binding="{Binding IncludesInsulation}"/>
-                  <DataGridTextColumn Header="Size Block" Width="100" Binding="{Binding SizeBlock}"/>
-
-                  <DataGridComboBoxColumn x:Name="cmbLineWeights" Header="Line Weight" Width="120" 
-                                          SelectedValueBinding="{Binding LineWeight}" SelectedValuePath="Key" DisplayMemberPath="Value" />
-
+                  <DataGridTextColumn Header="Service Name" Width="150" Binding="{Binding ServiceName}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Service Type" Width="120" Binding="{Binding ServiceTypeDescription}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Layer Tag 1" Width="130" Binding="{Binding LayerTag1}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Layer Tag 2" Width="130" Binding="{Binding LayerTag2}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Layer Color" Width="80" Binding="{Binding LayerColor}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Level Block" Width="100" Binding="{Binding LevelBlock}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Size Block" Width="100" Binding="{Binding SizeBlock}" IsReadOnly="True"/>
+                  <DataGridCheckBoxColumn Header="Insulation" Width="80" Binding="{Binding IncludesInsulation}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Line Weight" Width="100" Binding="{Binding LineWeightDescription}" IsReadOnly="True"/>
                 </DataGrid.Columns>
-
-                <DataGrid.ContextMenu>
-                  <ContextMenu>
-                    <MenuItem Header="Delete Service Entry" Click="deleteServiceEntry_Click"></MenuItem>
-                  </ContextMenu>
-                </DataGrid.ContextMenu>
-
               </DataGrid>
             </ScrollViewer>
 
-            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-              <Button x:Name="btnUpdateServiceEntries" Width="133" Height="24" HorizontalAlignment="Right" 
-                    Content="Update Service Entries" Margin="525,0,0,0" Click="btnUpdateServiceEntries_Click" RenderTransformOrigin="0.502,0.5"/>
+            <!-- Update Button (Hidden for now since grid is read-only) -->
+            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,10,0" Visibility="Collapsed">
+              <Button x:Name="btnUpdateServiceEntries" Width="150" Height="24"
+                    Content="Update Service Entries" Click="btnUpdateServiceEntries_Click"/>
             </StackPanel>
-          </StackPanel>
+          </Grid>
         </TabItem>
 
-      </TabControl>
-      <StackPanel Orientation="Horizontal">
-        <Button x:Name="btnBack" HorizontalAlignment="Right" Width="35" Click="btnBack_Click" ToolTip="Back to Database Editor">
-          <Image Source="/FabricationSample;component/Resources/arrow_left_32@2x.png" Width="39" Height="20"/>
-        </Button>       
-      </StackPanel>
+        <TabItem x:Name="tbiButtonMappings" Header="Button Mappings" Loaded="tbiButtonMappings_Loaded">
+          <Grid Margin="10">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
+            <!-- Info Label -->
+            <TextBlock Grid.Row="0" Text="View of all buttons and their item mappings for the selected service(s)." Margin="0,0,0,10"/>
+
+            <!-- Button Mappings Grid with Scrolling -->
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                          PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
+              <DataGrid x:Name="dgButtonMappings" VerticalAlignment="Stretch" CanUserSortColumns="True"
+                        AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                        SelectionMode="Single" IsReadOnly="True">
+                <DataGrid.Columns>
+                  <DataGridTextColumn Header="Tab Name" Width="120" Binding="{Binding TabName}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Button Name" Width="150" Binding="{Binding ButtonName}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Button Code" Width="100" Binding="{Binding ButtonCode}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Item Count" Width="80" Binding="{Binding ItemCount}" IsReadOnly="True"/>
+                  <DataGridTextColumn Header="Item Paths" Width="*" Binding="{Binding ItemPaths}" IsReadOnly="True"/>
+                </DataGrid.Columns>
+              </DataGrid>
+            </ScrollViewer>
+          </Grid>
+        </TabItem>
+
+    </TabControl>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,0">
+      <Button x:Name="btnBack" HorizontalAlignment="Left" Width="35" Click="btnBack_Click" ToolTip="Back to Database Editor">
+        <Image Source="/FabricationSample;component/Resources/arrow_left_32@2x.png" Width="39" Height="20"/>
+      </Button>
     </StackPanel>
-  </StackPanel>
+  </Grid>
 </UserControl>

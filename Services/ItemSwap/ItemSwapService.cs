@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Windows;
+using System.Windows.Threading;
 using Autodesk.Fabrication;
 using Autodesk.Fabrication.DB;
 using Autodesk.Fabrication.Results;
@@ -9,6 +11,7 @@ using FabricationSample.Models;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
+using AcApp = Autodesk.AutoCAD.ApplicationServices.Application;
 
 namespace FabricationSample.Services.ItemSwap
 {
@@ -107,9 +110,19 @@ namespace FabricationSample.Services.ItemSwap
                     return result;
                 }
 
-                // Store the original item's service button info
-                undoRecord.OriginalButtonName = GetOriginalButtonName(originalItem);
-                undoRecord.OriginalItemPath = GetOriginalItemPath(originalItem);
+                // Store the original item's service button info using CID matching
+                var (buttonName, itemPath) = FindOriginalButtonInfo(originalItem);
+                undoRecord.OriginalButtonName = buttonName;
+                undoRecord.OriginalItemPath = itemPath;
+
+                // If we couldn't find the exact button, store enough info to search by CID later
+                if (string.IsNullOrEmpty(buttonName) || string.IsNullOrEmpty(itemPath))
+                {
+                    // Store the new item's button as fallback (we know this from the swap selection)
+                    // Note: This means undo will reload the same CID from any available button
+                    undoRecord.OriginalButtonName = newServiceButton.Name;
+                    undoRecord.OriginalItemPath = newServiceButton.ServiceButtonItems[newButtonItemIndex].ItemPath;
+                }
 
                 // Step 2: Load the new item
                 var service = originalItem.Service;
@@ -134,13 +147,7 @@ namespace FabricationSample.Services.ItemSwap
                 // Step 3: Transfer properties from undo record to new item
                 result.TransferResult = ItemPropertyTransfer.TransferProperties(undoRecord, newItem, options);
 
-                // Step 4: Capture position BEFORE deleting original item
-                if (options.TransferPosition && !string.IsNullOrEmpty(undoRecord.OriginalAcadHandle))
-                {
-                    PositionNewItemAtOriginalLocation(newItem, undoRecord.OriginalAcadHandle);
-                }
-
-                // Step 5: Delete the original item
+                // Step 4: Delete the original item
                 ItemOperationResult deleteResult = Job.DeleteItem(originalItem);
                 if (deleteResult.Status != ResultStatus.Succeeded)
                 {
@@ -152,7 +159,7 @@ namespace FabricationSample.Services.ItemSwap
                     return result;
                 }
 
-                // Step 6: Add the new item to the job
+                // Step 5: Add the new item to the job
                 ItemOperationResult addResult = Job.AddItem(newItem);
                 if (addResult.Status != ResultStatus.Succeeded)
                 {
@@ -161,19 +168,19 @@ namespace FabricationSample.Services.ItemSwap
                     return result;
                 }
 
-                // Step 7: Apply pending position to the new item (after it's added to job)
-                if (options.TransferPosition && _hasPendingPosition)
+                // Step 6: Position the new item at original location using connector endpoints
+                if (options.TransferPosition && undoRecord.OriginalPosition != null && undoRecord.OriginalPosition.HasValidPosition)
                 {
-                    ApplyPendingPosition(newItem);
+                    PositionItemUsingConnectors(newItem, undoRecord.OriginalPosition);
                 }
 
-                // Step 8: Update undo record with new item info and push to stack
+                // Step 7: Update undo record with new item info and push to stack
                 undoRecord.NewItemUniqueId = newItem.UniqueId;
                 undoRecord.NewItemName = newItem.Name;
                 undoRecord.Description = $"Swapped '{undoRecord.OriginalItemName}' with '{newItem.Name}'";
                 _undoManager.RecordSwap(undoRecord);
 
-                // Step 9: Update the view
+                // Step 8: Update the view
                 Autodesk.Fabrication.UI.UIApplication.UpdateView(new[] { newItem }.ToList());
 
                 result.Success = true;
@@ -247,25 +254,35 @@ namespace FabricationSample.Services.ItemSwap
                     return result;
                 }
 
-                // Find the original button and item
+                // Find the original button and item - try multiple strategies
                 ServiceButton originalButton = null;
                 ServiceButtonItem originalButtonItem = null;
 
-                foreach (var tab in service.ServiceTemplate.ServiceTabs)
+                // Strategy 1: Try exact button name and item path match
+                // Convert to arrays to avoid collection modification during enumeration
+                var serviceTabs = service.ServiceTemplate.ServiceTabs.ToArray();
+                foreach (var tab in serviceTabs)
                 {
-                    foreach (var button in tab.ServiceButtons)
+                    var serviceButtons = tab.ServiceButtons.ToArray();
+                    foreach (var button in serviceButtons)
                     {
                         if (button.Name == undoRecord.OriginalButtonName)
                         {
                             originalButton = button;
                             // Try to find the item by path
-                            for (int i = 0; i < button.ServiceButtonItems.Count; i++)
+                            var buttonItems = button.ServiceButtonItems.ToArray();
+                            for (int i = 0; i < buttonItems.Length; i++)
                             {
-                                if (button.ServiceButtonItems[i].ItemPath == undoRecord.OriginalItemPath)
+                                if (buttonItems[i].ItemPath == undoRecord.OriginalItemPath)
                                 {
-                                    originalButtonItem = button.ServiceButtonItems[i];
+                                    originalButtonItem = buttonItems[i];
                                     break;
                                 }
+                            }
+                            // If no path match, take the first item from this button
+                            if (originalButtonItem == null && buttonItems.Length > 0)
+                            {
+                                originalButtonItem = buttonItems[0];
                             }
                             break;
                         }
@@ -273,10 +290,69 @@ namespace FabricationSample.Services.ItemSwap
                     if (originalButton != null) break;
                 }
 
+                // Strategy 2: Search by CID using filename matching (avoid loading items which modifies collections)
+                if (originalButton == null || originalButtonItem == null)
+                {
+                    int targetCID = undoRecord.OriginalCID;
+                    string targetName = undoRecord.OriginalItemName;
+                    var allTabs = service.ServiceTemplate.ServiceTabs.ToArray();
+
+                    foreach (var tab in allTabs)
+                    {
+                        var allButtons = tab.ServiceButtons.ToArray();
+                        foreach (var button in allButtons)
+                        {
+                            var allButtonItems = button.ServiceButtonItems.ToArray();
+                            foreach (var buttonItem in allButtonItems)
+                            {
+                                try
+                                {
+                                    // Match by filename containing CID or item name
+                                    string fileName = System.IO.Path.GetFileNameWithoutExtension(buttonItem.ItemPath ?? "");
+                                    if (!string.IsNullOrEmpty(fileName))
+                                    {
+                                        if (fileName.Contains(targetCID.ToString()) ||
+                                            (!string.IsNullOrEmpty(targetName) &&
+                                             fileName.IndexOf(targetName, StringComparison.OrdinalIgnoreCase) >= 0))
+                                        {
+                                            originalButton = button;
+                                            originalButtonItem = buttonItem;
+                                            break;
+                                        }
+                                    }
+                                }
+                                catch { }
+                            }
+                            if (originalButton != null) break;
+                        }
+                        if (originalButton != null) break;
+                    }
+                }
+
+                // Strategy 3: Fall back to first button with items
+                if (originalButton == null || originalButtonItem == null)
+                {
+                    var allTabs = service.ServiceTemplate.ServiceTabs.ToArray();
+                    foreach (var tab in allTabs)
+                    {
+                        var allButtons = tab.ServiceButtons.ToArray();
+                        foreach (var button in allButtons)
+                        {
+                            if (button.ServiceButtonItems.Count > 0)
+                            {
+                                originalButton = button;
+                                originalButtonItem = button.ServiceButtonItems[0];
+                                break;
+                            }
+                        }
+                        if (originalButton != null) break;
+                    }
+                }
+
                 if (originalButton == null || originalButtonItem == null)
                 {
                     result.Success = false;
-                    result.ErrorMessage = "Could not find original service button or item.";
+                    result.ErrorMessage = $"Could not find original service button or item. Service: {undoRecord.OriginalServiceName}, Button: {undoRecord.OriginalButtonName}, CID: {undoRecord.OriginalCID}";
                     return result;
                 }
 
@@ -311,8 +387,7 @@ namespace FabricationSample.Services.ItemSwap
 
                 result.TransferResult = ItemPropertyTransfer.TransferProperties(undoRecord, restoredItem, transferOptions);
 
-                // Step 4: Add to job first, then position
-                // Step 5: Add to job
+                // Step 4: Add to job
                 var addResult = Job.AddItem(restoredItem);
                 if (addResult.Status != ResultStatus.Succeeded)
                 {
@@ -321,13 +396,13 @@ namespace FabricationSample.Services.ItemSwap
                     return result;
                 }
 
-                // Step 6: Position at original location (after item is added)
-                if (undoRecord.OriginalPosition != null)
+                // Step 5: Position at original location using connector-based positioning
+                if (undoRecord.OriginalPosition != null && undoRecord.OriginalPosition.HasValidPosition)
                 {
-                    PositionItemAtLocation(restoredItem, undoRecord.OriginalPosition, undoRecord.OriginalAcadHandle);
+                    PositionItemUsingConnectors(restoredItem, undoRecord.OriginalPosition);
                 }
 
-                // Step 7: Update view
+                // Step 6: Update view
                 Autodesk.Fabrication.UI.UIApplication.UpdateView(new[] { restoredItem }.ToList());
 
                 result.Success = true;
@@ -356,216 +431,188 @@ namespace FabricationSample.Services.ItemSwap
         }
 
         /// <summary>
-        /// Positions an item at the specified location using AutoCAD transformation.
+        /// Positions an item using connector endpoint data from the Fabrication API.
+        /// This method uses the Fabrication API directly instead of AutoCAD transactions
+        /// to avoid threading issues when called from WPF UI.
+        /// Note: Items on designlines (nodes/fittings) may not be repositioned correctly
+        /// as they are constrained by their connections to adjacent items.
         /// </summary>
-        private void PositionItemAtLocation(Item newItem, ItemPositionData originalPosition, string originalHandle = null)
+        /// <param name="item">The item to position.</param>
+        /// <param name="originalPosition">The original position data containing connector endpoints.</param>
+        /// <returns>True if positioning was attempted, false if skipped.</returns>
+        private bool PositionItemUsingConnectors(Item item, ItemPositionData originalPosition)
         {
-            if (originalPosition == null)
-                return;
+            if (item == null || originalPosition == null || !originalPosition.HasValidPosition)
+                return false;
 
             try
             {
-                // Get the AutoCAD handle of the new item after it's added to the job
-                string newHandle = Job.GetACADHandleFromItem(newItem);
-                if (string.IsNullOrEmpty(newHandle))
-                    return;
+                // Get the new item's current primary connector position
+                if (item.Connectors == null || item.Connectors.Count == 0)
+                    return false;
 
-                Document doc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
-                if (doc == null)
-                    return;
+                Point3D currentConnectorPos = item.GetConnectorEndPoint(0);
+                Point3D targetConnectorPos = originalPosition.PrimaryEndpoint;
 
-                Autodesk.AutoCAD.DatabaseServices.Database db = doc.Database;
+                // Calculate the offset needed to move from current position to target position
+                double offsetX = targetConnectorPos.X - currentConnectorPos.X;
+                double offsetY = targetConnectorPos.Y - currentConnectorPos.Y;
+                double offsetZ = targetConnectorPos.Z - currentConnectorPos.Z;
 
-                using (DocumentLock docLock = doc.LockDocument())
-                using (Transaction trans = db.TransactionManager.StartTransaction())
-                {
-                    // Get the new item's entity
-                    long newLn = Int64.Parse(newHandle, System.Globalization.NumberStyles.HexNumber);
-                    Handle newHn = new Handle(newLn);
-                    ObjectId newId = db.GetObjectId(false, newHn, 0);
+                // Only move if there's actually a difference (more than 0.1 units)
+                if (Math.Abs(offsetX) < 0.1 && Math.Abs(offsetY) < 0.1 && Math.Abs(offsetZ) < 0.1)
+                    return true; // Already in position
 
-                    if (newId.IsNull || newId.IsErased)
-                    {
-                        trans.Commit();
-                        return;
-                    }
-
-                    Entity newEntity = trans.GetObject(newId, OpenMode.ForWrite) as Entity;
-                    if (newEntity == null)
-                    {
-                        trans.Commit();
-                        return;
-                    }
-
-                    // Calculate the translation vector from new item's current position to original position
-                    // Get the new item's connector position for reference
-                    Point3D newConnectorPos = default;
-                    bool hasNewConnector = false;
-                    try
-                    {
-                        if (newItem.Connectors != null && newItem.Connectors.Count > 0)
-                        {
-                            newConnectorPos = newItem.GetConnectorEndPoint(0);
-                            hasNewConnector = true;
-                        }
-                    }
-                    catch { }
-
-                    if (hasNewConnector && originalPosition.HasValidPosition)
-                    {
-                        // Create translation from current position to original position
-                        Vector3d translation = new Vector3d(
-                            originalPosition.PrimaryEndpoint.X - newConnectorPos.X,
-                            originalPosition.PrimaryEndpoint.Y - newConnectorPos.Y,
-                            originalPosition.PrimaryEndpoint.Z - newConnectorPos.Z
-                        );
-
-                        // Apply translation transformation
-                        Matrix3d transformMatrix = Matrix3d.Displacement(translation);
-                        newEntity.TransformBy(transformMatrix);
-                    }
-
-                    trans.Commit();
-                }
+                // Use AutoCAD transformation to move the item
+                MoveItemWithOffset(item, offsetX, offsetY, offsetZ);
+                return true;
             }
             catch (Exception)
             {
                 // Positioning failed - item will remain at default location
                 // This is non-critical, so we don't propagate the error
+                return false;
             }
         }
 
         /// <summary>
-        /// Positions a new item at the same location as an original item using handle-based transformation.
+        /// Moves an item by the specified offset using AutoCAD commands.
+        /// Uses SendStringToExecute to issue MOVE command which works better for Fabrication items.
         /// </summary>
-        private void PositionNewItemAtOriginalLocation(Item newItem, string originalAcadHandle)
+        private void MoveItemWithOffset(Item item, double offsetX, double offsetY, double offsetZ)
         {
-            if (string.IsNullOrEmpty(originalAcadHandle))
-                return;
-
             try
             {
-                Document doc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
+                // Get the AutoCAD handle for this item
+                string handle = Job.GetACADHandleFromItem(item);
+                if (string.IsNullOrEmpty(handle))
+                    return;
+
+                Document doc = AcApp.DocumentManager.MdiActiveDocument;
                 if (doc == null)
                     return;
 
-                Autodesk.AutoCAD.DatabaseServices.Database db = doc.Database;
-
-                // Get original entity's position before it gets deleted
-                Point3d originalCenter = default;
-                bool hasOriginalCenter = false;
-
-                using (Transaction trans = db.TransactionManager.StartTransaction())
+                // Try method 1: Use SendStringToExecute with MOVE command
+                // This is more reliable for Fabrication items as it uses the native move functionality
+                try
                 {
-                    long origLn = Int64.Parse(originalAcadHandle, System.Globalization.NumberStyles.HexNumber);
-                    Handle origHn = new Handle(origLn);
-                    ObjectId origId = db.GetObjectId(false, origHn, 0);
+                    // Format displacement with proper decimal separator for AutoCAD
+                    string dispX = offsetX.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    string dispY = offsetY.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    string dispZ = offsetZ.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-                    if (!origId.IsNull && !origId.IsErased)
+                    // Build the MOVE command: select by handle, then specify displacement
+                    // (handent "handle") selects the entity by handle
+                    string moveCmd = $"_.MOVE (handent \"{handle}\")  0,0,0 @{dispX},{dispY},{dispZ} ";
+
+                    doc.SendStringToExecute(moveCmd, true, false, false);
+                    return;
+                }
+                catch
+                {
+                    // Fall back to direct transformation if SendStringToExecute fails
+                }
+
+                // Method 2: Direct transformation using proper document context
+                using (DocumentLock docLock = doc.LockDocument())
+                {
+                    Autodesk.AutoCAD.DatabaseServices.Database db = doc.Database;
+
+                    using (Transaction trans = db.TransactionManager.StartTransaction())
                     {
-                        Entity origEntity = trans.GetObject(origId, OpenMode.ForRead) as Entity;
-                        if (origEntity != null)
+                        try
                         {
-                            // Get the geometric center of the original entity
-                            Extents3d extents = origEntity.GeometricExtents;
-                            originalCenter = new Point3d(
-                                (extents.MinPoint.X + extents.MaxPoint.X) / 2,
-                                (extents.MinPoint.Y + extents.MaxPoint.Y) / 2,
-                                (extents.MinPoint.Z + extents.MaxPoint.Z) / 2
-                            );
-                            hasOriginalCenter = true;
+                            long ln = Int64.Parse(handle, System.Globalization.NumberStyles.HexNumber);
+                            Handle hn = new Handle(ln);
+                            ObjectId oid = db.GetObjectId(false, hn, 0);
+
+                            if (!oid.IsNull && !oid.IsErased)
+                            {
+                                Entity entity = trans.GetObject(oid, OpenMode.ForWrite) as Entity;
+                                if (entity != null)
+                                {
+                                    Vector3d displacement = new Vector3d(offsetX, offsetY, offsetZ);
+                                    Matrix3d transform = Matrix3d.Displacement(displacement);
+                                    entity.TransformBy(transform);
+                                }
+                            }
+                        }
+                        catch { }
+
+                        trans.Commit();
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Move failed - item stays at current position
+            }
+        }
+
+        /// <summary>
+        /// Gets the button name and item path for an item by matching CID/pattern number.
+        /// Uses filename matching to avoid collection modification issues.
+        /// </summary>
+        private (string buttonName, string itemPath) FindOriginalButtonInfo(Item item)
+        {
+            if (item?.Service?.ServiceTemplate?.ServiceTabs == null)
+                return (null, null);
+
+            int itemCID = item.CID;
+            string itemName = item.Name;
+
+            // Convert to arrays to avoid collection modification during enumeration
+            var tabs = item.Service.ServiceTemplate.ServiceTabs.ToArray();
+
+            foreach (var tab in tabs)
+            {
+                var buttons = tab.ServiceButtons.ToArray();
+                foreach (var button in buttons)
+                {
+                    var buttonItems = button.ServiceButtonItems.ToArray();
+                    foreach (var buttonItem in buttonItems)
+                    {
+                        if (string.IsNullOrEmpty(buttonItem.ItemPath))
+                            continue;
+
+                        // Use filename matching instead of loading items (to avoid collection modification)
+                        try
+                        {
+                            string fileName = System.IO.Path.GetFileNameWithoutExtension(buttonItem.ItemPath);
+                            if (!string.IsNullOrEmpty(fileName))
+                            {
+                                // Check if filename contains the CID number or matches item name
+                                if (fileName.Contains(itemCID.ToString()) ||
+                                    fileName.Equals(itemName, StringComparison.OrdinalIgnoreCase) ||
+                                    fileName.IndexOf(itemName, StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    return (button.Name, buttonItem.ItemPath);
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // Skip this button item
                         }
                     }
-                    trans.Commit();
                 }
+            }
 
-                // Store this for later positioning after the new item is added
-                if (hasOriginalCenter)
+            // Fallback: return first button with any items as a last resort
+            foreach (var tab in tabs)
+            {
+                var buttons = tab.ServiceButtons.ToArray();
+                foreach (var button in buttons)
                 {
-                    _pendingPositionCenter = originalCenter;
-                    _hasPendingPosition = true;
+                    if (button.ServiceButtonItems.Count > 0)
+                    {
+                        var firstItem = button.ServiceButtonItems[0];
+                        return (button.Name, firstItem.ItemPath);
+                    }
                 }
             }
-            catch (Exception)
-            {
-                // Position capture failed
-            }
-        }
 
-        // Temporary storage for positioning
-        private Point3d _pendingPositionCenter;
-        private bool _hasPendingPosition;
-
-        /// <summary>
-        /// Applies pending position to a newly added item.
-        /// </summary>
-        private void ApplyPendingPosition(Item newItem)
-        {
-            if (!_hasPendingPosition)
-                return;
-
-            try
-            {
-                string newHandle = Job.GetACADHandleFromItem(newItem);
-                if (string.IsNullOrEmpty(newHandle))
-                    return;
-
-                Document doc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
-                if (doc == null)
-                    return;
-
-                Autodesk.AutoCAD.DatabaseServices.Database db = doc.Database;
-
-                using (DocumentLock docLock = doc.LockDocument())
-                using (Transaction trans = db.TransactionManager.StartTransaction())
-                {
-                    long newLn = Int64.Parse(newHandle, System.Globalization.NumberStyles.HexNumber);
-                    Handle newHn = new Handle(newLn);
-                    ObjectId newId = db.GetObjectId(false, newHn, 0);
-
-                    if (newId.IsNull || newId.IsErased)
-                    {
-                        trans.Commit();
-                        return;
-                    }
-
-                    Entity newEntity = trans.GetObject(newId, OpenMode.ForWrite) as Entity;
-                    if (newEntity == null)
-                    {
-                        trans.Commit();
-                        return;
-                    }
-
-                    // Get new entity's current center
-                    try
-                    {
-                        Extents3d newExtents = newEntity.GeometricExtents;
-                        Point3d newCenter = new Point3d(
-                            (newExtents.MinPoint.X + newExtents.MaxPoint.X) / 2,
-                            (newExtents.MinPoint.Y + newExtents.MaxPoint.Y) / 2,
-                            (newExtents.MinPoint.Z + newExtents.MaxPoint.Z) / 2
-                        );
-
-                        // Calculate translation
-                        Vector3d translation = _pendingPositionCenter - newCenter;
-
-                        // Apply transformation
-                        Matrix3d transformMatrix = Matrix3d.Displacement(translation);
-                        newEntity.TransformBy(transformMatrix);
-                    }
-                    catch { }
-
-                    trans.Commit();
-                }
-            }
-            catch (Exception)
-            {
-                // Positioning failed
-            }
-            finally
-            {
-                _hasPendingPosition = false;
-            }
+            return (null, null);
         }
 
         /// <summary>
@@ -573,28 +620,8 @@ namespace FabricationSample.Services.ItemSwap
         /// </summary>
         private string GetOriginalButtonName(Item item)
         {
-            // Try to find the button this item came from
-            if (item?.Service?.ServiceTemplate?.ServiceTabs == null)
-                return null;
-
-            foreach (var tab in item.Service.ServiceTemplate.ServiceTabs)
-            {
-                foreach (var button in tab.ServiceButtons)
-                {
-                    foreach (var buttonItem in button.ServiceButtonItems)
-                    {
-                        // Match by database ID or pattern number
-                        if (buttonItem.ItemPath != null &&
-                            item.SourceDescription != null &&
-                            item.SourceDescription.Contains(button.Name))
-                        {
-                            return button.Name;
-                        }
-                    }
-                }
-            }
-
-            return null;
+            var (buttonName, _) = FindOriginalButtonInfo(item);
+            return buttonName;
         }
 
         /// <summary>
@@ -602,28 +629,8 @@ namespace FabricationSample.Services.ItemSwap
         /// </summary>
         private string GetOriginalItemPath(Item item)
         {
-            // The item path would need to be determined from the service button item
-            // This is a best-effort approach
-            if (item?.Service?.ServiceTemplate?.ServiceTabs == null)
-                return null;
-
-            foreach (var tab in item.Service.ServiceTemplate.ServiceTabs)
-            {
-                foreach (var button in tab.ServiceButtons)
-                {
-                    foreach (var buttonItem in button.ServiceButtonItems)
-                    {
-                        // Try to match by pattern number or name
-                        if (buttonItem.ItemPath != null)
-                        {
-                            // This is approximate - would need refinement
-                            return buttonItem.ItemPath;
-                        }
-                    }
-                }
-            }
-
-            return null;
+            var (_, itemPath) = FindOriginalButtonInfo(item);
+            return itemPath;
         }
     }
 }

@@ -88,6 +88,7 @@ namespace FabricationSample.Data
 
     public class ServiceEntryMapper : INotifyPropertyChanged
     {
+        public string ServiceName { get; set; }
         public int ServiceTypeId { get; set; }
         public string ServiceTypeDescription { get; set; }
         public string LayerTag1 { get; set; }
@@ -97,12 +98,14 @@ namespace FabricationSample.Data
         public bool IncludesInsulation { get; set; }
         public string SizeBlock { get; set; }
         public LineWeight.LineWeightEnum LineWeight { get; set; }
+        public string LineWeightDescription { get; set; }
 
         public ServiceEntry ServiceEntry { get; set; }
 
-        public ServiceEntryMapper(ServiceEntry entry)
+        public ServiceEntryMapper(ServiceEntry entry, string serviceName = "")
         {
             ServiceEntry = entry;
+            ServiceName = serviceName;
 
             ServiceTypeId = entry.ServiceType.Id;
             ServiceTypeDescription = entry.ServiceType.Description;
@@ -113,6 +116,7 @@ namespace FabricationSample.Data
             IncludesInsulation = entry.IncludesInsulation;
             SizeBlock = entry.SizeBlock;
             LineWeight = entry.LineWeight.LineWeightValue;
+            LineWeightDescription = entry.LineWeight.LineWeightValue.ToString();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -972,6 +976,56 @@ namespace FabricationSample.Data
 
 
   #endregion
+
+    #region Service Button Mappings
+
+    /// <summary>
+    /// Grid item for displaying service button mappings in ServiceEditor.
+    /// </summary>
+    public class ServiceButtonMappingGridItem : INotifyPropertyChanged
+    {
+        public string TabName { get; set; }
+        public string ButtonName { get; set; }
+        public string ButtonCode { get; set; }
+        public int ItemCount { get; set; }
+        public string ItemPaths { get; set; }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+    }
+
+    #endregion
+
+    #region Specifications
+
+    /// <summary>
+    /// Grid item for displaying specifications in DatabaseEditor.
+    /// </summary>
+    public class SpecificationGridItem : INotifyPropertyChanged
+    {
+        public string Name { get; set; }
+        public string Group { get; set; }
+        public bool Exists { get; set; }
+        public Specification Spec { get; set; }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public SpecificationGridItem()
+        {
+            Name = "";
+            Group = "";
+            Exists = false;
+        }
+
+        public SpecificationGridItem(Specification spec)
+        {
+            Spec = spec;
+            Name = spec.Name;
+            Group = spec.Group;
+            Exists = true;
+        }
+    }
+
+    #endregion
 
     #region PriceListGrouping
 

@@ -73,6 +73,9 @@
     <Reference Include="UIAutomationProvider" />
     <Reference Include="UIAutomationTypes" />
     <Reference Include="WindowsBase" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Runtime.Serialization" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\ExportCommands.cs" />
@@ -99,10 +102,26 @@
     <Compile Include="Services\Export\ItemLaborExportService.cs" />
     <Compile Include="Services\Export\PriceTablesExportService.cs" />
     <Compile Include="Services\Export\ProductInfoExportService.cs" />
+    <Compile Include="Services\Export\ServiceEntriesExportService.cs" />
+    <Compile Include="Services\Export\SectionsExportService.cs" />
+    <Compile Include="Services\Export\ServiceTemplateDataExportService.cs" />
+    <Compile Include="Services\Export\ItemStatusesExportService.cs" />
+    <Compile Include="Services\Export\JobStatusesExportService.cs" />
+    <Compile Include="Services\Export\SpecificationsExportService.cs" />
     <Compile Include="Services\Import\CsvImportService.cs" />
     <Compile Include="Services\Import\IImportService.cs" />
     <Compile Include="Services\Import\ImportModels.cs" />
     <Compile Include="Services\Import\PriceTableImportService.cs" />
+    <Compile Include="Services\Import\ServiceEntriesImportService.cs" />
+    <Compile Include="Services\Import\InstallationTimesImportService.cs" />
+    <Compile Include="Services\Import\ServiceTemplateDataImportService.cs" />
+    <Compile Include="Services\Import\ItemDataImportService.cs" />
+    <Compile Include="Services\Import\ProductDatabaseImportService.cs" />
+    <Compile Include="Services\Import\SectionsImportService.cs" />
+    <Compile Include="Services\Import\SupplierDiscountsImportService.cs" />
+    <Compile Include="Services\Import\ItemStatusesImportService.cs" />
+    <Compile Include="Services\Import\JobStatusesImportService.cs" />
+    <Compile Include="Services\Import\SpecificationsImportService.cs" />
     <!-- <Compile Include="Services\Import\ProductListImportService.cs" /> Temporarily disabled due to API type resolution issues -->
     <Compile Include="Services\ItemSwap\ItemSwapService.cs" />
     <Compile Include="Services\ItemSwap\ItemSwapUndoManager.cs" />
@@ -110,6 +129,7 @@
     <Compile Include="Models\ItemSwapUndoRecord.cs" />
     <Compile Include="Models\ItemPropertySnapshot.cs" />
     <Compile Include="Utilities\CsvHelpers.cs" />
+    <Compile Include="Utilities\SupplierIdsConverter.cs" />
     <Compile Include="Utilities\FileHelpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UserControls\Ancillaries\AncillariesView.xaml.cs">
@@ -137,7 +157,36 @@
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-PriceLists.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Export.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Import.cs" />
+    <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-ContentTransfer.cs" />
+    <Compile Include="ContentTransfer\Models\ContentPackage.cs" />
+    <Compile Include="ContentTransfer\Services\ItemContentExportService.cs" />
+    <Compile Include="ContentTransfer\Services\ItemContentImportService.cs" />
+    <Compile Include="ContentTransfer\Windows\ItemExportWindow.xaml.cs">
+      <DependentUpon>ItemExportWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ContentTransfer\Windows\ItemImportWindow.xaml.cs">
+      <DependentUpon>ItemImportWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-ItemSwap.cs" />
+    <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-ProfileCopy.cs" />
+    <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Specifications.cs" />
+    <Compile Include="ProfileCopy\Models\ProfileInfo.cs" />
+    <Compile Include="ProfileCopy\Models\DataTypeDescriptor.cs" />
+    <Compile Include="ProfileCopy\Models\MergeOptions.cs" />
+    <Compile Include="ProfileCopy\Models\CopyResult.cs" />
+    <Compile Include="ProfileCopy\Models\ProfileManifest.cs" />
+    <Compile Include="ProfileCopy\Utilities\ProfilePathHelper.cs" />
+    <Compile Include="ProfileCopy\Services\BackupService.cs" />
+    <Compile Include="ProfileCopy\Services\ProfileDiscoveryService.cs" />
+    <Compile Include="ProfileCopy\Services\ProfileCopyService.cs" />
+    <Compile Include="ProfileCopy\Services\ProfileManifestService.cs" />
+    <Compile Include="ProfileCopy\Services\SelectiveCleanupService.cs" />
+    <Compile Include="ProfileCopy\Windows\ProfileDataCopyWindow.xaml.cs">
+      <DependentUpon>ProfileDataCopyWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ProfileCopy\Windows\DataTypePreviewWindow.xaml.cs">
+      <DependentUpon>DataTypePreviewWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor.xaml.cs">
       <DependentUpon>DatabaseEditor.xaml</DependentUpon>
     </Compile>
@@ -285,8 +334,35 @@
     <Compile Include="Windows\SwapItemWindow.xaml.cs">
       <DependentUpon>SwapItemWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Windows\ColumnMappingWindow.xaml.cs">
+      <DependentUpon>ColumnMappingWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\ServiceSelectionWindow.xaml.cs">
+      <DependentUpon>ServiceSelectionWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\ServiceTemplateSelectionWindow.xaml.cs">
+      <DependentUpon>ServiceTemplateSelectionWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\PriceTableSelectionWindow.xaml.cs">
+      <DependentUpon>PriceTableSelectionWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\InstallTableSelectionWindow.xaml.cs">
+      <DependentUpon>InstallTableSelectionWindow.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Resources\Styles.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ProfileCopy\Windows\ProfileDataCopyWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ProfileCopy\Windows\DataTypePreviewWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="FabricationWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -500,6 +576,34 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Windows\SwapItemWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\ColumnMappingWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\ServiceSelectionWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\ServiceTemplateSelectionWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\PriceTableSelectionWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\InstallTableSelectionWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ContentTransfer\Windows\ItemExportWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ContentTransfer\Windows\ItemImportWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -3,12 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-
+             xmlns:utils="clr-namespace:FabricationSample.Utilities"
              mc:Ignorable="d"
              d:DesignHeight="460" d:DesignWidth="780" Loaded="UserControl_Loaded" Unloaded="UserControl_Unloaded"
              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 
     <UserControl.Resources>
+        <utils:SupplierIdsConverter x:Key="SupplierIdsConverter"/>
         <Style x:Key="GroupedHeaderStyle" TargetType="{x:Type GroupItem}">
             <Setter Property="Template">
                 <Setter.Value>
@@ -148,6 +149,9 @@
                         <TextBlock VerticalAlignment="Bottom" Margin="10,-1,0,0">Filter By Group</TextBlock>
                         <ComboBox Name="cmbMapProdFilterGroup" Width="150" Margin="10,0,0,0" SelectionChanged="cmbMapProdFilterGroup_SelectionChanged">
                         </ComboBox>
+                        <TextBlock VerticalAlignment="Bottom" Margin="10,-1,0,0">Filter By Supplier</TextBlock>
+                        <ComboBox Name="cmbMapProdFilterSupplier" Width="150" Margin="10,0,0,0" SelectionChanged="cmbMapProdFilterSupplier_SelectionChanged">
+                        </ComboBox>
                         <TextBlock VerticalAlignment="Bottom" Margin="10,-1,0,0">Filter By Database Id</TextBlock>
                         <TextBox Name="txtFilterMapProdById" Width="150" Height="20" VerticalAlignment="Center" Margin="10,-1,0,0"></TextBox>
                         <Button Name="btnFilterProdGroup" Margin="10,0" Width="100" Click="btnFilterMapProdById_Click">Filter by Id</Button>
@@ -169,11 +173,15 @@
                         <TextBox Name="txtNewProductSupplier" Width="150" Height="20" VerticalAlignment="Center" Margin="10,-1,0,0"></TextBox>
                         <Button Name="btnCreateProductSupplier" Margin="10,0" Width="148" Click="btnCreateProductSupplier_Click" >Create Product Supplier</Button>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,10">
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <Button Name="btnLoadMapProd" Margin="10,0" Click="btnLoadMapProd_Click" Width="150">Re-Load Product Entries</Button>
                         <Button Name="btnSave" Margin="10,0" Width="150" Click="btnSave_Click">Save Product Database</Button>
                         <Button Name="btnExportProductGrid" Margin="10,0" Width="120" Click="btnExportProductGrid_Click">Export Grid</Button>
                         <Button Name="btnGetProductInfo" Margin="10,0" Width="150" Click="btnGetProductInfo_Click">Export Full Product Info</Button>
+                        <Button Name="btnImportProductDatabase" Margin="10,0" Width="160" Click="btnImportProductDatabase_Click">Import Product Database</Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,10">
+                        <ProgressBar x:Name="prgProductDatabase" Height="20" Width="400" Margin="10,0" VerticalAlignment="Center" Minimum="0"/>
                     </StackPanel>
                 </StackPanel>
             </Grid>
@@ -255,17 +263,27 @@
                     <Button Name="btnAddDiscount" Content="Add Discount" Width="100" Click="AddDiscount_Click" IsEnabled="False"></Button>
                     <Button Name="btnDeleteDiscount" Content="Delete Discount" Width="100" Margin="10,0,0,0" Click="DeleteDiscount_Click" IsEnabled="False"></Button>
                     <Button Name="btnExportSupplierDiscounts" Content="Export Discounts" Width="120" Margin="10,0,0,0" Click="btnExportSupplierDiscounts_Click"></Button>
+                    <Button Name="btnImportSupplierDiscounts" Content="Import Discounts" Width="120" Margin="10,0,0,0" Click="btnImportSupplierDiscounts_Click"></Button>
+                    <ProgressBar Name="prgSupplierDiscounts" Width="150" Height="20" Margin="10,0,0,0" Minimum="0" Maximum="100" Value="0"/>
                 </DockPanel>
             </Grid>
         </TabItem>
 
         <TabItem x:Name="tbiFabTables" Header="Fabrication Tables" Loaded="tbiFabTimes_Loaded" Height="24" VerticalAlignment="Bottom">
-            <StackPanel>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="100"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <ContentControl Name="ccFabricationTimes" Width="650" Height="300" 
-                            HorizontalAlignment="Left"/>
+                <ContentControl Grid.Row="0" Name="ccFabricationTimes"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 
-                <DockPanel  DockPanel.Dock="Bottom"  VerticalAlignment="Center"  Margin="0,10,0,0">
+                <DockPanel Grid.Row="1" VerticalAlignment="Top" Margin="0,10,0,0">
                     <TextBlock Height="21" TextWrapping="Wrap" Text="Fabrication Table" VerticalAlignment="Center" Width="100" Margin="10,0,0,0" />
                     <ComboBox x:Name="cmbFabTimesTable" Width="200" HorizontalAlignment="Left" Text="Select Data Type" SelectionChanged="cmbFabTable_SelectionChanged">
                         <ComboBox.GroupStyle>
@@ -292,28 +310,26 @@
                     <TextBlock Height="21" TextWrapping="Wrap" Text="Supplier ID" Width="70" VerticalAlignment="Center" Margin="10,0,0,0"/>
                     <ComboBox x:Name="cmbFabTableSupplierId" Width="200" HorizontalAlignment="Left" Text="Select Data Type" SelectionChanged="cmbFabTableSupplierId_SelectionChanged" Margin="0"/>
                 </DockPanel>
-                <DockPanel DockPanel.Dock="Bottom"  VerticalAlignment="Top" Margin="0,5,0,0">
-                    <TextBlock Height="21" TextWrapping="Wrap" Text="Actions" VerticalAlignment="Center" 
+                <DockPanel Grid.Row="2" VerticalAlignment="Top" Margin="0,5,0,0">
+                    <TextBlock Height="21" TextWrapping="Wrap" Text="Actions" VerticalAlignment="Center"
                      HorizontalAlignment="Left" Margin="10,0,0,0" Width="110" FontWeight="Bold"/>
                 </DockPanel>
-                <DockPanel  DockPanel.Dock="Bottom"  VerticalAlignment="Center" Margin="0,0,0,0">
+                <DockPanel Grid.Row="3" VerticalAlignment="Center" Margin="0,0,0,0">
                     <Button Height="25" Width="120" Content="Add Table" HorizontalAlignment="Left" Margin="10,0,0,0" Click="btnNewfabricationTable_Click"/>
                     <Button x:Name="btnDeleteFabTable" Height="25" Width="120" Content="Delete Table" HorizontalAlignment="Left" Margin="10,0,0,0" Click="btnDeleteFabTable_Click"/>
                     <Button x:Name="btnEditFabTable" Height="25" Width="120" Content="Edit Table Name" HorizontalAlignment="Left" Margin="10,0,0,0" Click="btnEditFabTable_Click"/>
                 </DockPanel>
-                <DockPanel  DockPanel.Dock="Bottom"  VerticalAlignment="Center" Margin="0,5,0,0">
-
-                    <Button x:Name="btnNewFabTableProdEntry" Height="25" Width="120" Content="Add Product Id Entry" HorizontalAlignment="Left" 
+                <DockPanel Grid.Row="4" VerticalAlignment="Center" Margin="0,5,0,0">
+                    <Button x:Name="btnNewFabTableProdEntry" Height="25" Width="120" Content="Add Product Id Entry" HorizontalAlignment="Left"
                             Margin="10,0,0,0" Click="btnNewFabTableProdEntry_Click"/>
                     <Button x:Name="btnNewFabTableRow" Height="25" Width="120" Content="Add Row" HorizontalAlignment="Left" Margin="10,0,0,0" Click="btnNewFabTableRow_Click"/>
                     <Button x:Name="btnNewFabTableColumn" Height="25" Width="120" Content="Add Column" HorizontalAlignment="Left" Margin="10,0,0,0" Click="btnNewFabTableColumn_Click"/>
                 </DockPanel>
-                <DockPanel  DockPanel.Dock="Bottom"  VerticalAlignment="Top" Margin="0,5,0,0">
+                <DockPanel Grid.Row="5" VerticalAlignment="Top" Margin="0,5,0,10">
                     <Button x:Name="btnUpdateFabricationTimes" Height="25" Width="150" Click="btnUpdateFabricationTimes_Click" Content="Update Fabrication Times" HorizontalAlignment="Right" Margin="0,0,10,0" DockPanel.Dock="Right"/>
-
-                    <ProgressBar x:Name="prgFabTimes" Width="400" Height="20" HorizontalAlignment="Left" VerticalAlignment="Bottom" Minimum="0" Margin="10,0,0,0"/>
+                    <ProgressBar x:Name="prgFabTimes" Height="20" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Minimum="0" Margin="10,0,0,0"/>
                 </DockPanel>
-            </StackPanel>
+            </Grid>
         </TabItem>
         <TabItem x:Name="tbiInstallTables" Header="Installation Tables" Loaded="tbiInstallationTimes_Loaded" Height="24" VerticalAlignment="Bottom">
             <Grid>
@@ -374,14 +390,16 @@
                     <ProgressBar x:Name="prgInstallationTimes" Height="20" Minimum="0" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="10,0,0,0"/>
                     <Button x:Name="btnExportInstallationTimes" Width="170"
                             Click="btnExportInstallationTimes_Click" Content="Export Installation Times" Height="25" HorizontalAlignment="Right" Margin="0,0,10,0" DockPanel.Dock="Right"/>
+                    <Button x:Name="btnImportInstallationTimes" Width="170"
+                            Click="btnImportInstallationTimes_Click" Content="Import Installation Times" Height="25" HorizontalAlignment="Right" Margin="0,0,0,0" DockPanel.Dock="Right"/>
                     <Button x:Name="btnUpdateInstallationTimes" Width="150"
                             Click="btnUpdateInstallationTimes_Click" Content="Update Installation Times" Height="25" HorizontalAlignment="Right" Margin="0,0,0,0" DockPanel.Dock="Right"/>
                 </DockPanel>
             </Grid>
         </TabItem>
         <TabItem x:Name="tbiJobCustomData" Header="Job Custom Data">
-            <StackPanel>
-                <StackPanel.Resources>
+            <Grid>
+                <Grid.Resources>
                     <Style x:Key="DisableRow" TargetType="{x:Type DataGridRow}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Exists}" Value="True">
@@ -389,8 +407,12 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </StackPanel.Resources>
-                <DataGrid x:Name="dgJobCustomData" Height="410" VerticalAlignment="Top" CanUserSortColumns="True" AutoGenerateColumns="False" Loaded="dgJobCustomData_Loaded" >
+                </Grid.Resources>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <DataGrid Grid.Row="0" x:Name="dgJobCustomData" VerticalAlignment="Stretch" CanUserSortColumns="True" AutoGenerateColumns="False" Loaded="dgJobCustomData_Loaded" >
                     <DataGrid.ItemBindingGroup>
                         <BindingGroup/>
                     </DataGrid.ItemBindingGroup>
@@ -401,15 +423,15 @@
                         <DataGridTextColumn Header="Value" Width="180" Binding="{Binding Value, Mode=TwoWay}"/>
                     </DataGrid.Columns>
                 </DataGrid>
-                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0">
                     <Button x:Name="btnDeleteJobCustomData" Width="133" Height="24" HorizontalAlignment="Left" Content="Delete Custom Data" Click="btnDeleteJobCustomData_Click" Margin="0,0,0,0"/>
                     <Button x:Name="btnUpdateJobCustomData" Width="133" Height="24" HorizontalAlignment="Right" Content="Update Custom Data" Click="btnUpdateJobCustomData_Click" Margin="380,0,0,0"/>
                 </StackPanel>
-            </StackPanel>
+            </Grid>
         </TabItem>
         <TabItem x:Name="tbiCustomData" Header="Item Custom Data">
-            <StackPanel>
-                <StackPanel.Resources>
+            <Grid>
+                <Grid.Resources>
                     <Style x:Key="DisableRow" TargetType="{x:Type DataGridRow}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Exists}" Value="True">
@@ -417,8 +439,12 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </StackPanel.Resources>
-                <DataGrid x:Name="dgCustomData" Height="410" VerticalAlignment="Top" CanUserSortColumns="True" AutoGenerateColumns="False" Loaded="dgCustomData_Loaded" >
+                </Grid.Resources>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <DataGrid Grid.Row="0" x:Name="dgCustomData" VerticalAlignment="Stretch" CanUserSortColumns="True" AutoGenerateColumns="False" Loaded="dgCustomData_Loaded" >
                     <DataGrid.ItemBindingGroup>
                         <BindingGroup/>
                     </DataGrid.ItemBindingGroup>
@@ -430,15 +456,15 @@
                         <DataGridTextColumn Header="Value" Width="180" Binding="{Binding Value, Mode=TwoWay}"/>
                     </DataGrid.Columns>
                 </DataGrid>
-                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0">
                     <Button x:Name="btnDeleteCustomData" Width="133" Height="24" HorizontalAlignment="Left" Content="Delete Custom Data" Click="btnDeleteCustomData_Click" Margin="0,0,0,0"/>
                     <Button x:Name="btnUpdateCustomData" Width="133" Height="24" HorizontalAlignment="Right" Content="Update Custom Data" Margin="380,0,0,0" Click="btnUpdateCustomData_Click"/>
                 </StackPanel>
-            </StackPanel>
+            </Grid>
         </TabItem>
         <TabItem x:Name="tbiItemStatuses" Header="Item Statuses">
-            <StackPanel>
-                <StackPanel.Resources>
+            <Grid>
+                <Grid.Resources>
                     <Style x:Key="DisableRow" TargetType="{x:Type DataGridRow}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Exists}" Value="True">
@@ -453,8 +479,12 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </StackPanel.Resources>
-                <DataGrid x:Name="dgItemStatuses" Height="410" VerticalAlignment="Top" CanUserSortColumns="True" AutoGenerateColumns="False" Loaded="dgItemStatuses_Loaded">
+                </Grid.Resources>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <DataGrid Grid.Row="0" x:Name="dgItemStatuses" VerticalAlignment="Stretch" CanUserSortColumns="True" AutoGenerateColumns="False" Loaded="dgItemStatuses_Loaded">
                     <DataGrid.ItemBindingGroup>
                         <BindingGroup/>
                     </DataGrid.ItemBindingGroup>
@@ -466,11 +496,13 @@
                         <DataGridCheckBoxColumn Header="Output" Width="120" Binding="{Binding Output, Mode=TwoWay}"/>
                     </DataGrid.Columns>
                 </DataGrid>
-                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                    <Button x:Name="btnDeleteItemStatuses" Width="133" Height="24" HorizontalAlignment="Right" Content="Delete Item Status" Margin="0,0,0,0" Click="btnDeleteItemStatuses_Click"/>
-                    <Button x:Name="btnUpdateItemStatuses" Width="133" Height="24" HorizontalAlignment="Right" Content="Update Item Statuses" Margin="380,0,0,0" Click="btnUpdateItemStatuses_Click"/>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0">
+                    <Button x:Name="btnDeleteItemStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Delete Item Status" Margin="0,0,0,0" Click="btnDeleteItemStatuses_Click"/>
+                    <Button x:Name="btnExportItemStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Export Item Statuses" Margin="10,0,0,0" Click="btnExportItemStatuses_Click"/>
+                    <Button x:Name="btnImportItemStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Import Item Statuses" Margin="10,0,0,0" Click="btnImportItemStatuses_Click"/>
+                    <Button x:Name="btnUpdateItemStatuses" Width="133" Height="24" HorizontalAlignment="Right" Content="Update Item Statuses" Margin="60,0,0,0" Click="btnUpdateItemStatuses_Click"/>
                 </StackPanel>
-            </StackPanel>
+            </Grid>
         </TabItem>
         <TabItem x:Name="tbiJobStatuses" Header="Job Statuses">
             <StackPanel>
@@ -507,8 +539,10 @@
                     </DataGrid.Columns>
                 </DataGrid>
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                    <Button x:Name="btnDeleteJobStatuses" Width="133" Height="24" HorizontalAlignment="Right" Content="Delete Job Status" Margin="0,0,0,0" Click="btnDeleteJobStatuses_Click"/>
-                    <Button x:Name="btnUpdateJobStatuses" Width="133" Height="24" HorizontalAlignment="Right" Content="Update Job Statuses" Margin="380,0,0,0" Click="btnUpdateJobStatuses_Click"/>
+                    <Button x:Name="btnDeleteJobStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Delete Job Status" Margin="0,0,0,0" Click="btnDeleteJobStatuses_Click"/>
+                    <Button x:Name="btnExportJobStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Export Job Statuses" Margin="10,0,0,0" Click="btnExportJobStatuses_Click"/>
+                    <Button x:Name="btnImportJobStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Import Job Statuses" Margin="10,0,0,0" Click="btnImportJobStatuses_Click"/>
+                    <Button x:Name="btnUpdateJobStatuses" Width="133" Height="24" HorizontalAlignment="Right" Content="Update Job Statuses" Margin="60,0,0,0" Click="btnUpdateJobStatuses_Click"/>
                 </StackPanel>
             </StackPanel>
         </TabItem>
@@ -560,11 +594,14 @@
         </TabItem>
 
         <TabItem x:Name="tbiServices" Header="Services" Loaded="tbiServices_Loaded" Height="24" VerticalAlignment="Top">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Orientation="Vertical" Width="638">
-                    <StackPanel Orientation="Horizontal">
-                        <Label Content="Select Service" Width="100"></Label>
-                        <ComboBox Name="cmbSelectService" Width="410" SelectionChanged="cmbSelectService_SelectionChanged">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Vertical" Margin="5">
+
+                    <!-- Service Selection -->
+                    <DockPanel Margin="0,0,0,0">
+                        <TextBlock Text="Select Service" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <Button Content="Properties" Width="100" Click="serviceProperties_Click" DockPanel.Dock="Right" Margin="5,0,0,0"/>
+                        <ComboBox Name="cmbSelectService" SelectionChanged="cmbSelectService_SelectionChanged">
                             <ComboBox.GroupStyle>
                                 <GroupStyle>
                                     <GroupStyle.HeaderTemplate>
@@ -580,19 +617,23 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                        <Button Content="Properties" Margin="5,0,0,0"  Width="100" Click="serviceProperties_Click"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-                        <Button Content="Edit Service Name" Width="115" Click="EditServiceName_Click"/>
-                        <Button Content="Add Service" Margin="5,0,0,0" Width="115" Click="AddService_Click"/>
-                        <Button Content="Delete Service" Margin="5,0,0,0" Width="115" Click="DeleteService_Click"/>
-                        <Button Content="Save Services" Margin="5,0,0,0" Width="115" Click="SaveServices_Click"/>
-                        <Button Content="Export Item Data" Margin="5,0,23,0" Width="115" Click="btnExportItemData_Click"/>
-                    </StackPanel>
+                    </DockPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
-                        <Label Content="Use Service Template"></Label>
-                        <ComboBox Name="cmbUseServiceTemplate" Width="492" SelectionChanged="cmbUseServiceTemplate_SelectionChanged">
+                    <!-- Service Actions -->
+                    <WrapPanel Margin="0,8,0,0" HorizontalAlignment="Stretch">
+                        <Button Content="Edit Service Name" Width="115" Height="25" Margin="0,2,5,2" Click="EditServiceName_Click"/>
+                        <Button Content="Add Service" Width="100" Height="25" Margin="0,2,5,2" Click="AddService_Click"/>
+                        <Button Content="Delete Service" Width="100" Height="25" Margin="0,2,5,2" Click="DeleteService_Click"/>
+                        <Button Content="Save Services" Width="100" Height="25" Margin="0,2,5,2" Click="SaveServices_Click"/>
+                        <Button Content="Export Item Data" Width="115" Height="25" Margin="0,2,5,2" Click="btnExportItemData_Click"/>
+                        <Button Content="Export Button Report" Width="140" Height="25" Margin="0,2,5,2" Click="btnExportButtonReport_Click"/>
+                        <Button Content="Import Button Report" Width="140" Height="25" Margin="0,2,5,2" Click="btnImportButtonReport_Click"/>
+                    </WrapPanel>
+
+                    <!-- Service Template -->
+                    <DockPanel Margin="0,15,0,0">
+                        <TextBlock Text="Service Template" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <ComboBox Name="cmbUseServiceTemplate" SelectionChanged="cmbUseServiceTemplate_SelectionChanged">
                             <ComboBox.GroupStyle>
                                 <GroupStyle>
                                     <GroupStyle.HeaderTemplate>
@@ -608,11 +649,14 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                    </StackPanel>
+                    </DockPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label Content="Service Specification"></Label>
-                        <ComboBox Name="cmbServiceSpecification" Width="429" SelectionChanged="cmbServiceSpecification_SelectionChanged" Margin="5,0,0,0">
+                    <!-- Service Specification -->
+                    <DockPanel Margin="0,8,0,0">
+                        <TextBlock Text="Specification" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <CheckBox Name="chkServiceSpecification" VerticalAlignment="Center" Click="chkServiceSpecification_Click" DockPanel.Dock="Right" Margin="5,0,0,0"/>
+                        <TextBlock Text="Not Set" VerticalAlignment="Center" DockPanel.Dock="Right" Margin="5,0,0,0"/>
+                        <ComboBox Name="cmbServiceSpecification" SelectionChanged="cmbServiceSpecification_SelectionChanged">
                             <ComboBox.GroupStyle>
                                 <GroupStyle>
                                     <GroupStyle.HeaderTemplate>
@@ -628,38 +672,35 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                        <Label Content="Not Set"></Label>
-                        <CheckBox Name="chkServiceSpecification" VerticalAlignment="Center" Click="chkServiceSpecification_Click"></CheckBox>
-                    </StackPanel>
+                    </DockPanel>
 
-                    <StackPanel Margin="0,20,0,0">
-                        <ContentControl Name="ButtonsTabControl_Services" Width="620" 
-                            HorizontalAlignment="Left"/>
-                    </StackPanel>
+                    <!-- Service Buttons Tab Control -->
+                    <ContentControl Name="ButtonsTabControl_Services" Margin="0,15,0,0"
+                            HorizontalAlignment="Stretch"/>
 
-
-                    <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
-                        <Label Content="Select Button Item" Width="150"/>
-                        <ComboBox Name="cmbSelectButtonItem" Width="200" SelectionChanged="cmbSelectButtonItem_SelectionChanged">
+                    <!-- Button Item Details -->
+                    <DockPanel Margin="0,15,0,0">
+                        <TextBlock Text="Select Button Item" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <ComboBox Name="cmbSelectButtonItem" SelectionChanged="cmbSelectButtonItem_SelectionChanged">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding ServiceTemplateCondition.Description}"></TextBlock>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    </DockPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <Label Content="Greater Than:"/>
                         <Label Content="Value" x:Name="labGreaterThan"/>
-                        <Label Content="Less Than Or Equal To:" Margin="50,0,0,0"/>
+                        <Label Content="Less Than Or Equal To:" Margin="30,0,0,0"/>
                         <Label Content="Value" x:Name="labLessThan"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                         <Label Content="Item Path:" />
                         <Label x:Name="labItemPath" Content="Path" />
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="5,20,0,0">
-                        <Button x:Name="btnAddItem" Content="Add Item To Job" Click="btnAddItem_Click"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,15,0,10">
+                        <Button x:Name="btnAddItem" Content="Add Item To Job" Height="25" Width="120" Click="btnAddItem_Click"/>
                     </StackPanel>
 
                 </StackPanel>
@@ -667,29 +708,31 @@
         </TabItem>
 
         <TabItem x:Name="tbiServiceTemplates" Header="Service Templates" Loaded="tbiServiceTemplates_Loaded" Unloaded="tbiServiceTemplates_UnLoaded">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                <StackPanel Orientation="Vertical" Width="610" MinHeight="420">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="0,10,0,0">
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" MinHeight="420">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                         <Label Content="Select Service Template" Width="150"></Label>
                         <ComboBox Name="cmbSelectServiceTemplate" Width="460" SelectionChanged="cmbSelectServiceTemplate_SelectionChanged" DisplayMemberPath="Name"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Edit Template Name" Click="editServiceTemplateName_Click" Margin="0,0,5,0" Width="115" />
-                        <Button Content="Add Template" Click="addServiceTemplate_Click" Margin="0,0,5,0" Width="115" />
-                        <Button Content="Delete Template" Click="deleteServiceTemplate_Click" Margin="0,0,0,0" Width="115" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="Edit Template Name" Click="editServiceTemplateName_Click" Width="130" />
+                        <Button Content="Add Template" Click="addServiceTemplate_Click" Margin="10,0,0,0" Width="115" />
+                        <Button Content="Delete Template" Click="deleteServiceTemplate_Click" Margin="10,0,0,0" Width="115" />
                     </StackPanel>
                     <StackPanel>
-                        <ContentControl Name="ButtonsTabControl_Templates" Width="610" Margin="0,20,0,0"
-                            HorizontalAlignment="Left"/>
+                        <ContentControl Name="ButtonsTabControl_Templates" Margin="0,20,0,0"
+                            HorizontalAlignment="Stretch"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <Label Content="Actions" FontWeight="Bold" HorizontalAlignment="Center" />
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="5,10,0,0">
-                        <Button Content="Add New Template Condition" Width="170" Click="addServiceTemplateCondition_Click" />
-                        <Button Content="Add New Tab" Width="90" Click="addServiceTab_Click"  Margin="10,0,0,0" />
-                        <Button Content="Add Button" Width="90" Click="addServiceButton_Click"  Margin="10,0,0,0"/>
-                        <Button Content="Save" Width="80" Click="btnSaveServiceTemplates_Click" Margin="155,0,0,0"></Button>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                        <Button Content="Add New Template Condition" Width="190" Click="addServiceTemplateCondition_Click" />
+                        <Button Content="Add New Tab" Width="105" Click="addServiceTab_Click"  Margin="10,0,0,0" />
+                        <Button Content="Add Button" Width="100" Click="addServiceButton_Click"  Margin="10,0,0,0"/>
+                        <Button Content="Save" Width="90" Click="btnSaveServiceTemplates_Click" Margin="10,0,0,0"></Button>
+                        <Button Content="Export Button Report" Width="155" Click="btnExportTemplateButtonReport_Click" Margin="10,0,0,0"/>
+                        <Button Content="Import Button Report" Width="155" Click="btnImportTemplateButtonReport_Click" Margin="10,0,0,0"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <Label Content="Service Template Conditions" FontWeight="Bold" HorizontalAlignment="Center" />
@@ -848,7 +891,12 @@
                         </Border>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Right" Height="25">
-                        <Button Name="btnSaveSections" Content="Save Sections" Click="btnSaveSections_Click"></Button>
+                        <Button Name="btnExportSections" Content="Export Sections" Click="btnExportSections_Click" Width="100" Margin="0,0,5,0"></Button>
+                        <Button Name="btnImportSections" Content="Import Sections" Click="btnImportSections_Click" Width="100" Margin="0,0,5,0"></Button>
+                        <Button Name="btnSaveSections" Content="Save Sections" Click="btnSaveSections_Click" Width="100"></Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0" Height="25">
+                        <ProgressBar x:Name="prgSections" Height="20" Width="400" Margin="0,0" VerticalAlignment="Center" Minimum="0"/>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
@@ -995,8 +1043,15 @@
                 </StackPanel.Resources>
 
                 <StackPanel>
-                    <ContentControl Name="ItemsFolder_ManageContent" Width="620" 
+                    <ContentControl Name="ItemsFolder_ManageContent" Width="620"
                             HorizontalAlignment="Left"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                    <Button x:Name="btnExportContent" Width="120" Height="24"
+                            Content="Export Items" Click="btnExportContent_Click" Margin="0,0,10,0"/>
+                    <Button x:Name="btnImportContent" Width="120" Height="24"
+                            Content="Import Items" Click="btnImportContent_Click"/>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" Height="60" >
@@ -1005,6 +1060,27 @@
 
             </StackPanel>
         </TabItem>
+        <TabItem x:Name="tbiSpecifications" Header="Specifications" Loaded="tbiSpecifications_Loaded">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="100"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <DataGrid Grid.Row="0" x:Name="dgSpecifications" VerticalAlignment="Stretch" CanUserSortColumns="True" AutoGenerateColumns="False" IsReadOnly="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Name" Width="250" Binding="{Binding Name}"/>
+                        <DataGridTextColumn Header="Group" Width="*" Binding="{Binding Group}"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,10">
+                    <Button x:Name="btnExportSpecifications" Width="140" Height="24" Content="Export Specifications" Click="btnExportSpecifications_Click"/>
+                    <Button x:Name="btnImportSpecifications" Width="140" Height="24" Content="Import Specifications" Margin="10,0,0,0" Click="btnImportSpecifications_Click"/>
+                    <ProgressBar x:Name="prgSpecifications" Height="20" Width="200" Margin="10,0,0,0" Minimum="0" Maximum="100" Value="0"/>
+                    <Button x:Name="btnSaveSpecifications" Width="140" Height="24" Content="Save Specifications" Margin="10,0,0,0" Click="btnSaveSpecifications_Click"/>
+                </StackPanel>
+            </Grid>
+        </TabItem>
+
         <TabItem x:Name="tbiApplication" Header="Application" Height="24" VerticalAlignment="Top" Loaded="tbiApplication_Loaded">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" CanContentScroll="True">
                 <StackPanel Orientation="Vertical" Width="631" Height="450">
@@ -1054,6 +1130,213 @@
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
+        </TabItem>
+
+        <TabItem x:Name="tbiProfiles" Header="Profiles" Loaded="tbiProfiles_Loaded" Height="24" VerticalAlignment="Top">
+            <Grid Margin="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*" MinHeight="100"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Current Profile Info -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                    <TextBlock x:Name="txtProfileCurrentInfo" FontWeight="SemiBold" FontSize="13"/>
+                    <TextBlock x:Name="txtProfileCurrentPath" FontSize="11" Foreground="#666666" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <!-- Source Profile Selection -->
+                <GroupBox Grid.Row="1" Header="Copy From Profile" Margin="0,0,0,8" Padding="6">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="Source:" Width="55" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="cmbProfileSource" Height="26"
+                                      SelectionChanged="cmbProfileSource_SelectionChanged"
+                                      DisplayMemberPath="" IsEditable="False">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                                <ComboBox.ItemContainerStyle>
+                                    <Style TargetType="ComboBoxItem">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                <Setter Property="Foreground" Value="#999999"/>
+                                                <Setter Property="FontStyle" Value="Italic"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ComboBox.ItemContainerStyle>
+                            </ComboBox>
+                        </DockPanel>
+                        <TextBlock x:Name="txtProfileSourcePath" FontSize="11" Foreground="#888888" TextWrapping="Wrap" Margin="55,4,0,0"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Options Row -->
+                <StackPanel Grid.Row="2" Margin="0,0,0,5">
+                    <CheckBox x:Name="chkProfileBackup" Content="Create backup before copying" IsChecked="True"
+                              VerticalAlignment="Center" Margin="0,0,0,5"/>
+                    <WrapPanel>
+                        <TextBlock Text="Quick Select:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11" Foreground="#666666"/>
+                        <Button x:Name="btnProfileSelectPriceLabor" Content="Price &amp; Labor" MinWidth="100" Height="24"
+                                Click="btnProfileSelectPriceLabor_Click" Margin="0,0,5,0"/>
+                        <Button x:Name="btnProfileSelectAll" Content="Select All" MinWidth="80" Height="24"
+                                Click="btnProfileSelectAll_Click" Margin="0,0,5,0"/>
+                        <Button x:Name="btnProfileSelectNone" Content="Select None" MinWidth="90" Height="24"
+                                Click="btnProfileSelectNone_Click"/>
+                    </WrapPanel>
+                </StackPanel>
+
+                <!-- Data Types Checklist -->
+                <GroupBox Grid.Row="3" Header="Data Types to Copy" Margin="0,0,0,8" Padding="4">
+                    <ListView x:Name="lstProfileDataTypes" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListView.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,2">
+                                            <CheckBox Tag="{Binding Name}"
+                                                      Click="ProfileGroupCheckBox_Click"
+                                                      IsThreeState="True"
+                                                      VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12"
+                                                       Foreground="#0696D7"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ListView.GroupStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="2">
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsAvailable}"
+                                              VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" FontSize="12"
+                                               MouseLeftButtonUp="ProfileDataType_Click">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                                        <Setter Property="Foreground" Value="#AAAAAA"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsEnumerable}" Value="True">
+                                                        <Setter Property="Cursor" Value="Hand"/>
+                                                        <Setter Property="TextDecorations" Value="Underline"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding SelectionIndicator}" FontSize="10" Foreground="#0696D7"
+                                               VerticalAlignment="Center" Margin="5,0,0,0" FontWeight="SemiBold"/>
+                                    <TextBlock Text=" (not in source)" FontSize="10" Foreground="#CCCCCC"
+                                               VerticalAlignment="Center" Margin="5,0,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </GroupBox>
+
+                <!-- Progress + Status -->
+                <StackPanel Grid.Row="4" Margin="0,0,0,5">
+                    <StackPanel x:Name="pnlProfileProgress" Visibility="Collapsed">
+                        <ProgressBar x:Name="prgProfileCopy" Height="18" Minimum="0" Maximum="100" Value="0"/>
+                        <TextBlock x:Name="txtProfileCopyStatus" FontSize="11" Foreground="#666666" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <TextBlock x:Name="txtProfileStatus" FontSize="11" Foreground="#666666" Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <!-- Action Buttons -->
+                <DockPanel Grid.Row="5" Margin="0,0,0,5">
+                    <Button x:Name="btnProfileCopy" Content="Copy Selected Data" Width="150" Height="28"
+                            Click="btnProfileCopy_Click" DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+                    <TextBlock Text="AutoCAD must be restarted after copying." FontSize="11" Foreground="#E65100"
+                               VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </DockPanel>
+
+                <!-- Push to Profiles (Global only) -->
+                <GroupBox x:Name="grpPushToProfiles" Grid.Row="6" Header="Push to Profiles (Global Only)"
+                          Margin="0,8,0,0" Padding="6" Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock Text="Push the selected data types above to multiple profiles at once."
+                                   FontSize="11" Foreground="#666666" TextWrapping="Wrap" Margin="0,0,0,6"/>
+
+                        <!-- Target profile checkboxes -->
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock Text="Target Profiles:" VerticalAlignment="Center"
+                                       FontWeight="SemiBold" FontSize="12" DockPanel.Dock="Left"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
+                                <Button x:Name="btnPushSelectAll" Content="All" Width="50" Height="22"
+                                        Click="btnPushSelectAll_Click" Margin="0,0,5,0"/>
+                                <Button x:Name="btnPushSelectNone" Content="None" Width="50" Height="22"
+                                        Click="btnPushSelectNone_Click"/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <Border BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="3"
+                                MaxHeight="140" Margin="0,0,0,6">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="pnlPushTargetProfiles" Margin="4"/>
+                            </ScrollViewer>
+                        </Border>
+
+                        <!-- Push progress -->
+                        <StackPanel x:Name="pnlPushProgress" Visibility="Collapsed" Margin="0,0,0,4">
+                            <ProgressBar x:Name="prgPushProgress" Height="18" Minimum="0" Maximum="100"/>
+                            <TextBlock x:Name="txtPushStatus" FontSize="11" Foreground="#666666"
+                                       Margin="0,3,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <!-- Push button -->
+                        <DockPanel>
+                            <Button x:Name="btnPushToProfiles" Content="Push Selected Data"
+                                    Width="150" Height="28" Click="btnPushToProfiles_Click"
+                                    DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+                            <TextBlock x:Name="txtPushResultStatus" FontSize="11" Foreground="#666666"
+                                       VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        </DockPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Restore Backup -->
+                <GroupBox Grid.Row="7" Header="Restore Backup" Margin="0,5,0,0" Padding="6">
+                    <DockPanel>
+                        <Button x:Name="btnProfileRestore" Content="Restore" Width="80" Height="26"
+                                Click="btnProfileRestore_Click" DockPanel.Dock="Right" Margin="8,0,0,0"
+                                VerticalAlignment="Top"/>
+                        <Button x:Name="btnProfileOpenBackups" Content="Open Folder" Width="90" Height="26"
+                                Click="btnProfileOpenBackups_Click" DockPanel.Dock="Right" Margin="8,0,0,0"
+                                VerticalAlignment="Top"/>
+                        <StackPanel>
+                            <ComboBox x:Name="cmbProfileBackups" Height="26"
+                                      SelectionChanged="cmbProfileBackups_SelectionChanged"
+                                      DisplayMemberPath="" IsEditable="False"/>
+                            <TextBlock x:Name="txtProfileBackupInfo" FontSize="11" Foreground="#888888"
+                                       TextWrapping="Wrap" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
+                </GroupBox>
+            </Grid>
         </TabItem>
     </TabControl>
 </UserControl>

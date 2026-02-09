@@ -447,15 +447,34 @@ namespace FabricationSample.Models
                 if (!target.IsProductList || target.ProductList?.Rows == null)
                     return;
 
-                // Find the matching product list row by name
+                if (string.IsNullOrEmpty(record.OriginalProductListEntryName))
+                    return;
+
+                // Find the matching product list row by name (the product size name)
                 int rowIndex = -1;
                 for (int i = 0; i < target.ProductList.Rows.Count; i++)
                 {
                     var row = target.ProductList.Rows[i];
-                    if (row.Name == record.OriginalProductListEntryName)
+                    // Match by name (case-insensitive)
+                    if (string.Equals(row.Name, record.OriginalProductListEntryName, StringComparison.OrdinalIgnoreCase))
                     {
                         rowIndex = i;
                         break;
+                    }
+                }
+
+                // If not found by name, try partial match (product size might be part of name)
+                if (rowIndex < 0)
+                {
+                    for (int i = 0; i < target.ProductList.Rows.Count; i++)
+                    {
+                        var row = target.ProductList.Rows[i];
+                        if (!string.IsNullOrEmpty(row.Name) &&
+                            row.Name.IndexOf(record.OriginalProductListEntryName, StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            rowIndex = i;
+                            break;
+                        }
                     }
                 }
 
@@ -463,6 +482,11 @@ namespace FabricationSample.Models
                 if (rowIndex >= 0)
                 {
                     target.LoadProductListEntry(rowIndex);
+                    result.CustomDataTransferred++; // Count as a successful transfer
+                }
+                else
+                {
+                    result.Errors.Add($"Could not find matching product list entry: {record.OriginalProductListEntryName}");
                 }
             }
             catch (Exception ex)
