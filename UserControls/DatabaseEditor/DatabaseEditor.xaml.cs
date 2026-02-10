@@ -715,6 +715,11 @@ namespace FabricationSample.UserControls.DatabaseEditor
          txtAppDatabaseUnits.Text = Database.Units.ToString();
       }
 
+      private void Hyperlink_OpenRepo_Click(object sender, RoutedEventArgs e)
+      {
+         System.Diagnostics.Process.Start("https://github.com/Ty9112/FabricationSample");
+      }
+
       #endregion
 
       #region Content Creation

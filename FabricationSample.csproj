@@ -155,6 +155,7 @@
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-InstallTimes.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-FabTimes.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-PriceLists.cs" />
+    <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Commands.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Export.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Import.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-ContentTransfer.cs" />
@@ -333,6 +334,9 @@
     </Compile>
     <Compile Include="Windows\SwapItemWindow.xaml.cs">
       <DependentUpon>SwapItemWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\ExportPreviewWindow.xaml.cs">
+      <DependentUpon>ExportPreviewWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Windows\ColumnMappingWindow.xaml.cs">
       <DependentUpon>ColumnMappingWindow.xaml</DependentUpon>
@@ -576,6 +580,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Windows\SwapItemWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\ExportPreviewWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

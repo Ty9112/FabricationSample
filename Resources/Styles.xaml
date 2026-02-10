@@ -24,6 +24,7 @@
     <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
     <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
     <SolidColorBrush x:Key="HoverBrush" Color="{StaticResource HoverColor}"/>
+    <SolidColorBrush x:Key="NewFeatureAccentBrush" Color="#0696D7"/>
 
     <!-- Primary Button Style (Autodesk blue) -->
     <Style x:Key="PrimaryButton" TargetType="Button">

@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using FabricationSample.ProfileCopy.Models;
 using FabricationSample.ProfileCopy.Services;
 using FabricationSample.ProfileCopy.Utilities;
@@ -74,45 +75,18 @@ namespace FabricationSample.UserControls.DatabaseEditor
                 txtProfileCurrentPath.Text = _currentProfileDatabasePath;
 
                 // Check for pending selective cleanup from a previous copy.
-                // Check legacy path (backup directory) first, then profile-specific path.
-                try
-                {
-                    if (_cleanupService.HasPendingCleanup())
-                    {
-                        string cleanupResult = _cleanupService.ExecutePendingCleanup();
-                        if (cleanupResult != null)
-                        {
-                            MessageBox.Show(cleanupResult, "Selective Cleanup",
-                                MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
-                    }
-                }
-                catch (Exception cleanupEx)
-                {
-                    MessageBox.Show(
-                        $"Error during selective cleanup:\n\n{cleanupEx.Message}\n\nThe cleanup file will be removed.",
-                        "Cleanup Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    try { File.Delete(_cleanupService.GetCleanupFilePath()); } catch { }
-                }
+                // Defer execution until after UI initialization is complete to avoid
+                // crashing when deleted database objects are still referenced by other tabs.
+                bool hasLegacyCleanup = _cleanupService.HasPendingCleanup();
+                bool hasProfileCleanup = _cleanupService.HasPendingCleanup(_currentProfileDatabasePath);
 
-                try
+                if (hasLegacyCleanup || hasProfileCleanup)
                 {
-                    if (_cleanupService.HasPendingCleanup(_currentProfileDatabasePath))
+                    string dbPath = _currentProfileDatabasePath;
+                    Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
                     {
-                        string cleanupResult = _cleanupService.ExecutePendingCleanup(_currentProfileDatabasePath);
-                        if (cleanupResult != null)
-                        {
-                            MessageBox.Show(cleanupResult, "Selective Cleanup",
-                                MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
-                    }
-                }
-                catch (Exception cleanupEx)
-                {
-                    MessageBox.Show(
-                        $"Error during selective cleanup:\n\n{cleanupEx.Message}\n\nThe cleanup file will be removed.",
-                        "Cleanup Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    try { File.Delete(_cleanupService.GetCleanupFilePath(_currentProfileDatabasePath)); } catch { }
+                        RunDeferredCleanup(hasLegacyCleanup, hasProfileCleanup, dbPath);
+                    }));
                 }
 
                 // Generate manifest for current profile (fire-and-forget)
@@ -168,6 +142,47 @@ namespace FabricationSample.UserControls.DatabaseEditor
             catch (Exception ex)
             {
                 txtProfileStatus.Text = $"Error: {ex.Message}";
+            }
+        }
+
+        private void RunDeferredCleanup(bool hasLegacy, bool hasProfile, string dbPath)
+        {
+            var summaries = new List<string>();
+
+            if (hasLegacy)
+            {
+                try
+                {
+                    string result = _cleanupService.ExecutePendingCleanup();
+                    if (result != null) summaries.Add(result);
+                }
+                catch (Exception ex)
+                {
+                    summaries.Add($"Legacy cleanup error: {ex.Message}");
+                    try { File.Delete(_cleanupService.GetCleanupFilePath()); } catch { }
+                }
+            }
+
+            if (hasProfile)
+            {
+                try
+                {
+                    string result = _cleanupService.ExecutePendingCleanup(dbPath);
+                    if (result != null) summaries.Add(result);
+                }
+                catch (Exception ex)
+                {
+                    summaries.Add($"Profile cleanup error: {ex.Message}");
+                    try { File.Delete(_cleanupService.GetCleanupFilePath(dbPath)); } catch { }
+                }
+            }
+
+            if (summaries.Count > 0)
+            {
+                MessageBox.Show(
+                    string.Join("\n\n---\n\n", summaries),
+                    "Selective Cleanup",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
@@ -387,6 +402,67 @@ namespace FabricationSample.UserControls.DatabaseEditor
             }
         }
 
+        /// <summary>
+        /// Checks for data type dependencies and auto-includes required companion types.
+        /// Costs (Cost.MAP) requires Suppliers (SUPPLIER.MAP) because price lists are
+        /// stored under supplier groups — copying Cost.MAP without SUPPLIER.MAP causes
+        /// price list data to load incorrectly.
+        /// </summary>
+        private bool EnsureDataTypeDependencies(List<DataTypeDescriptor> selectedTypes)
+        {
+            bool hasCosts = selectedTypes.Any(d => d.DataType == DataType.Costs);
+            bool hasSuppliers = selectedTypes.Any(d => d.DataType == DataType.Suppliers);
+
+            if (hasCosts && !hasSuppliers)
+            {
+                var suppliersDesc = _profileDataTypes?.FirstOrDefault(d => d.DataType == DataType.Suppliers);
+                if (suppliersDesc != null && suppliersDesc.IsAvailable)
+                {
+                    var result = MessageBox.Show(
+                        "Costs / Price Lists (Cost.MAP) requires Suppliers (SUPPLIER.MAP) to load correctly.\n\n" +
+                        "Include Suppliers in this operation?",
+                        "Required Dependency", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Cancel)
+                        return false;
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        suppliersDesc.IsSelected = true;
+                        if (!selectedTypes.Contains(suppliersDesc))
+                            selectedTypes.Add(suppliersDesc);
+                        lstProfileDataTypes.Items.Refresh();
+                    }
+                }
+            }
+
+            if (hasSuppliers && !hasCosts)
+            {
+                var costsDesc = _profileDataTypes?.FirstOrDefault(d => d.DataType == DataType.Costs);
+                if (costsDesc != null && costsDesc.IsAvailable)
+                {
+                    var result = MessageBox.Show(
+                        "Suppliers (SUPPLIER.MAP) should be copied with Costs / Price Lists (Cost.MAP) " +
+                        "to keep supplier groups and price lists in sync.\n\n" +
+                        "Include Costs / Price Lists in this operation?",
+                        "Recommended Dependency", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Cancel)
+                        return false;
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        costsDesc.IsSelected = true;
+                        if (!selectedTypes.Contains(costsDesc))
+                            selectedTypes.Add(costsDesc);
+                        lstProfileDataTypes.Items.Refresh();
+                    }
+                }
+            }
+
+            return true;
+        }
+
         private void btnProfileCopy_Click(object sender, RoutedEventArgs e)
         {
             if (_isProfileCopying) return;
@@ -405,6 +481,10 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            // Enforce data type dependencies (e.g. Costs requires Suppliers)
+            if (!EnsureDataTypeDependencies(selectedTypes))
+                return;
 
             // Check how many data types have selective items
             var selectiveTypes = selectedTypes.Where(d => d.SelectedItems != null && d.SupportsSelectiveCleanup).ToList();
@@ -634,6 +714,10 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            // Enforce data type dependencies (e.g. Costs requires Suppliers)
+            if (!EnsureDataTypeDependencies(selectedTypes))
+                return;
 
             // Validate target profiles
             var targetProfiles = _pushTargetCheckBoxes

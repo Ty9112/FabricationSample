@@ -31,12 +31,9 @@ namespace FabricationSample
 
         public void Terminate()
         {
-            Database.Clear();
-            ProductDatabase.Clear();
-
-            Dispatcher.CurrentDispatcher.InvokeShutdown();
-
-            win.Close();
+            try { win?.Close(); } catch { }
+            try { Database.Clear(); } catch { }
+            try { ProductDatabase.Clear(); } catch { }
         }
     }
 
@@ -73,10 +70,8 @@ namespace FabricationSample
 
         public void Terminate()
         {
-            Database.Clear();
-            ProductDatabase.Clear();
-
-            Dispatcher.CurrentDispatcher.InvokeShutdown();
+            try { Database.Clear(); } catch { }
+            try { ProductDatabase.Clear(); } catch { }
         }
 
         #region Fabrication API Checking routines
