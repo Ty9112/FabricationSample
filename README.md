@@ -47,12 +47,15 @@ The following features have been added to the base Fabrication Sample applicatio
 - [Installation](#installation)
 - [AutoCAD Commands (NETLOAD)](#autocad-commands-netload)
 - [FabAPI UI Features](#fabapi-ui-features)
+  - [Commands Tab (Recommended Starting Point)](#commands-tab-recommended-starting-point)
   - [Content Transfer (Export/Import Items)](#content-transfer-exportimport-items)
   - [Profile Data Copy](#profile-data-copy)
     - [Selective Cleanup](#selective-cleanup)
     - [Push to Profiles (Global Only)](#push-to-profiles-global-only)
+    - [OneDrive and Network Storage Considerations](#onedrive-and-network-storage-considerations)
   - [CSV Import (Product List, Price List)](#csv-import)
   - [Item Swap with Undo](#item-swap-with-undo)
+- [Feature Risk Guide](#feature-risk-guide)
 - [Tabs Reference](#tabs-reference)
 - [Project Structure](#project-structure)
 - [Building from Source](#building-from-source)
@@ -128,6 +131,66 @@ These commands are available after loading the DLL via `NETLOAD` or the AutoCAD 
 ## FabAPI UI Features
 
 The FabAPI window (`FabAPI` command) provides a tabbed interface for interacting with the Fabrication database. The following sections document the extended features added beyond the original Autodesk sample.
+
+---
+
+### Commands Tab (Recommended Starting Point)
+
+**Location:** FabAPI Window > **Commands** tab
+
+If you're new to this plugin, the **Commands tab is the best place to start**. It provides a centralized hub for all export and import operations in a single, user-friendly interface — no need to navigate individual tabs or remember NETLOAD command names.
+
+#### Why Start Here
+
+The Commands tab consolidates every export and import operation into one place with:
+- **Checkboxes** to select which commands to run
+- **Quick-select buttons** (Select All, Select None, Exports Only, Imports Only)
+- **Descriptions** for each command so you know what you're getting
+- **Sequential execution** with a progress bar when running multiple commands
+- **Scrollable CSV preview** before saving any export — see exactly what data you're getting before committing to a file
+
+This is the safest way to explore the Fabrication database. Every export is **read-only** — it extracts data to CSV without modifying anything in the database. You can run all 7 exports to get a comprehensive snapshot of your configuration's data.
+
+#### Available Export Commands
+
+| Command | Description |
+|---------|-------------|
+| Get Product Info | Full product export with prices, labor, supplier IDs |
+| Export Item Data | Service items with product list entries and conditions |
+| Get Price Tables | Price lists and breakpoint tables (multi-file, prompts for table selection) |
+| Get Installation Times | Installation times tables (multi-file, prompts for table selection) |
+| Get Item Labor | Items with calculated labor from breakpoint tables |
+| Get Item Installation Tables | Items with assigned installation table mappings |
+| Get Service Template Data | Service template buttons, codes, and item paths (prompts for service selection) |
+
+#### Available Import Commands
+
+| Command | Description | Notes |
+|---------|-------------|-------|
+| Import Installation Times | Installation times from CSV | Active |
+| Import Product Database | Product definitions and supplier IDs | Active |
+| Import Supplier Discounts | Discount codes from CSV | Active |
+| Import Button Report | Service template button codes | Active |
+| Import Price List | Price data into a selected price list | Disabled — requires price list selection on Price Lists tab |
+
+#### Export Preview
+
+When you run an export command from the Commands tab, the data is first exported to a temporary file and displayed in a **scrollable preview window** with a DataGrid. You can:
+- Scroll through all rows and columns to verify the data
+- Resize the preview window by dragging edges or corners
+- Click **Save As...** to choose where to save the file
+- Click **Cancel** to discard without saving
+
+For multi-file exports (Price Tables, Installation Times), the preview shows the first file from the set. After clicking Save As, all files are saved to the chosen folder.
+
+#### How to Use
+
+1. Open the FabAPI window and navigate to the **Commands** tab
+2. Check the commands you want to run (use quick-select buttons for bulk selection)
+3. Click **Run Selected Commands**
+4. Confirm the list of commands to execute
+5. Each command runs sequentially — for exports, you'll see a preview and choose where to save; for imports, you'll go through the standard file selection and column mapping workflow
+6. A summary dialog shows results when all commands complete
 
 ---
 
@@ -257,6 +320,27 @@ When on the Global profile, the **Push to Profiles** panel appears. This lets yo
 4. Each target receives the selected `.MAP` files, and if selective items were configured, a per-profile cleanup file (`_pending_cleanup.json`) is saved in each target's DATABASE folder
 5. When a target profile is loaded in a future session, the cleanup runs automatically and shows a summary of deleted items
 
+#### OneDrive and Network Storage Considerations
+
+Many organizations store their Fabrication database on OneDrive, SharePoint-synced folders, or network shares. Profile Data Copy writes `.MAP` files directly to these locations, which introduces several potential issues:
+
+**OneDrive / SharePoint Sync:**
+- **File locking:** OneDrive may hold a sync lock on `.MAP` files while uploading. If Profile Copy tries to overwrite a file that OneDrive is actively syncing, the copy can fail with an access denied error. The backup will have already been created, but the target file may be in an inconsistent state.
+- **Sync delays:** After copying `.MAP` files, OneDrive may take seconds to minutes to sync the changes to other machines. If another user loads the profile on their machine before sync completes, they'll get the old data.
+- **Conflict files:** If two users perform Profile Copy operations targeting the same profile simultaneously, OneDrive may create conflict copies (e.g., `Cost-DESKTOP-ABC123.MAP`) instead of overwriting. These conflict files are ignored by Fabrication and will cause the operations to appear to have no effect.
+- **Cleanup file sync:** The `_pending_cleanup.json` file is written to the target profile's DATABASE folder. If OneDrive syncs this file to another machine before the original cleanup runs, the cleanup could run on the wrong machine or run twice.
+
+**Network shares (UNC paths):**
+- File locking on network shares can behave differently than local drives. If another user has the target profile loaded in ESTmep/CADmep (which holds `.MAP` files open), the copy will fail.
+- Network latency can cause partial writes if the connection drops during a large `.MAP` file copy.
+
+**Recommendations:**
+1. **Coordinate with your team** — only one person should perform Profile Copy operations at a time, and other users should close ESTmep/CADmep before the copy begins
+2. **Pause OneDrive sync** before performing Profile Copy if your database is on a OneDrive-synced path (right-click the OneDrive tray icon > Pause syncing)
+3. **Wait for sync to complete** before having other users load the updated profiles
+4. **Always keep backups enabled** (the checkbox is on by default) — this creates a timestamped backup before any changes, which can be restored from the Profiles tab if something goes wrong
+5. **Check for conflict files** after a copy — look in the target profile's DATABASE folder for files with machine names appended. Delete these if found and re-run the copy.
+
 ---
 
 ### CSV Import
@@ -297,6 +381,61 @@ Swap items in the current job with different items from the database, with full 
 
 ---
 
+## Feature Risk Guide
+
+Not all features carry the same risk. Here's a quick reference to help you decide what's safe to try immediately and what deserves more caution.
+
+### Safe — Read-Only Operations (Start Here)
+
+These features **do not modify the Fabrication database**. They only read data and export it to files. You can run these freely without any risk to your configuration.
+
+| Feature | What It Does |
+|---------|-------------|
+| **Commands Tab > All Exports** | Exports data to CSV files. Preview before saving. No database changes. |
+| **NETLOAD Export Commands** | Same exports via command line. Read-only. |
+| **Application Tab** | Displays configuration info. No changes. |
+
+**Recommendation:** Start with the Commands tab. Run all 7 exports to get a full snapshot of your database. Review the CSV previews to understand your data before attempting any imports or copies.
+
+### Moderate Risk — Data Imports
+
+These features **modify records in the Fabrication database** by updating or adding data. Changes are applied directly — there is no built-in undo for imports (unlike Item Swap).
+
+| Feature | Risk | Mitigation |
+|---------|------|-----------|
+| **Import Installation Times** | Updates existing installation rate records | Validate column mapping carefully; preview shows update vs. new counts before confirming |
+| **Import Product Database** | Updates product definitions and supplier IDs | Only modifies products matching by ID; preview shows exactly what changes |
+| **Import Supplier Discounts** | Updates discount codes | Limited scope — only affects discount values |
+| **Import Button Report** | Updates service template button codes | Only modifies matching buttons by service/tab/name |
+| **Import Price List** | Updates price list entries | Requires selecting the target price list first on the Price Lists tab |
+
+**Recommendations:**
+1. **Export first, import second.** Always run the corresponding export (e.g., Get Product Info) before importing so you have a baseline to compare against
+2. **Review the preview carefully.** The column mapping window and import preview show you exactly what will change. If the counts look wrong, cancel and check your CSV
+3. **Test on a non-production profile first.** Copy your profile, import into the copy, verify the results, then repeat on the real profile
+4. **Back up your .MAP files** before importing. Profile Data Copy's backup feature can help, or just manually copy the DATABASE folder
+
+### Higher Risk — File-Level Operations
+
+These features **copy or overwrite database files (.MAP files) and item files (.ITM files)**. They operate at the file level, which means mistakes can affect the entire profile or configuration.
+
+| Feature | Risk | Mitigation |
+|---------|------|-----------|
+| **Profile Data Copy** | Overwrites target profile's .MAP files | Automatic backup created before copy; can restore from Profiles tab |
+| **Push to Profiles** | Overwrites .MAP files across multiple profiles at once | Same backup protection, but applied to many profiles simultaneously — a mistake affects all targets |
+| **Content Transfer Export** | Copies .ITM files out — **read-only**, safe | No risk to source configuration |
+| **Content Transfer Import** | Copies .ITM files in and re-resolves database references | Can create items with unresolved references if names don't match; duplicate DB ID warning exists but proceeding overwrites existing items |
+| **Item Swap** | Replaces items in a drawing | Has undo, but restored items may not return to original coordinates (see Known Bugs) |
+
+**Recommendations:**
+1. **Always leave "Create backup" checked** when using Profile Data Copy. This is on by default — don't turn it off
+2. **Coordinate with your team.** Other users should close ESTmep/CADmep before you push to their profiles. See the [OneDrive section](#onedrive-and-network-storage-considerations) for additional concerns with shared storage
+3. **Start with a single profile** before using Push to Profiles. Copy to one named profile, load it, verify everything looks right, then push to the rest
+4. **For Content Transfer imports,** carefully review the reference validation in the import preview. Green "(ok)" means the reference exists in the target; yellow warnings mean you need to manually assign a replacement or the reference will be left unresolved
+5. **Restart AutoCAD/ESTmep after Profile Data Copy.** The Fabrication API loads .MAP files at startup and caches them in memory. Copied files won't take effect until the next session
+
+---
+
 ## Tabs Reference
 
 The FabAPI window contains the following tabs:
@@ -323,7 +462,8 @@ The FabAPI window contains the following tabs:
 | Job Information | View job properties and status history |
 | **Manage Content** | **Item folder tree, Create/Load items, Export/Import items** |
 | Specifications | Browse specification definitions |
-| Application | View application paths and configuration info |
+| **Commands** | **Centralized hub for all export/import operations with preview and progress** |
+| Application | View application paths, configuration info, What's New, and Resources |
 | **Profiles** | **Profile data copy between configurations with backup/restore** |
 
 ---
@@ -358,12 +498,15 @@ FabricationSample/
 │   ├── DatabaseEditor/                    # Main tabbed UI (partial class)
 │   │   ├── DatabaseEditor.xaml            # XAML layout for all tabs
 │   │   ├── DatabaseEditor.xaml.cs         # Core code-behind
+│   │   ├── DatabaseEditor-Commands.cs     # Commands tab logic and command registry
 │   │   ├── DatabaseEditor-ContentTransfer.cs  # Export/Import button handlers
 │   │   ├── DatabaseEditor-Import.cs       # CSV import handlers
 │   │   └── ...                            # Other partial class files
 │   ├── ServiceEditor/                     # Service editing views
 │   └── ItemFolders/                       # Item folder tree view
 ├── Windows/                               # Shared dialog windows
+│   ├── ExportPreviewWindow.xaml(.cs)      # Scrollable CSV preview before save
+│   └── ...                                # Selection and editing dialogs
 └── Utilities/                             # Helper classes
 ```
 
