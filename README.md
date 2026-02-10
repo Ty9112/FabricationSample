@@ -4,6 +4,9 @@ Extended Autodesk Fabrication API Sample plugin for CADmep / ESTmep / CAMduct (F
 
 > **This is a fork of [MartinMagallanes/FabricationSample](https://github.com/MartinMagallanes/FabricationSample)** with significant feature additions for production use. See [Summary of Extended Features](#summary-of-extended-features) below.
 
+![Main Window - Job Items tab with left navigation showing all available tabs and Item Swap buttons](Examples/Screenshots/MainWindow.png)
+*The FabAPI main window showing the Job Items tab with the full tab list on the left. The Swap Item and Undo Swap buttons (bottom-left) are extended features.*
+
 ## Authors and Credits
 
 This project builds on the original Autodesk Fabrication API Sample (shipped with the Fabrication SDK), updated for modern Fabrication versions and extended with production features for cross-configuration content management, data export/import, and profile management.
@@ -118,6 +121,15 @@ These commands are available after loading the DLL via `NETLOAD` or the AutoCAD 
 | `GetItemInstallationTables` | Exports items with their assigned installation times tables |
 | `GetServiceTemplateData` | Exports service template data (prompts with a service selection dialog) |
 
+![Product Database tab with export and import buttons](Examples/Screenshots/ProductDatabase.png)
+*The Product Database tab displays all product entries with their properties. Export and import buttons at the bottom allow CSV data transfer.*
+
+![Services tab with service selection dialog for export](Examples/Screenshots/Services.png)
+*The Services tab with the service selection dialog. Select which services to include when exporting service data or button reports.*
+
+![Service Templates tab with template selection and button report export](Examples/Screenshots/ServiceTemplates.png)
+*The Service Templates tab showing template conditions and button items. Export Button Report and Import Button Report are available for CSV-based template data management.*
+
 ### Import Commands
 
 | Command | Description |
@@ -137,6 +149,9 @@ The FabAPI window (`FabAPI` command) provides a tabbed interface for interacting
 ### Commands Tab (Recommended Starting Point)
 
 **Location:** FabAPI Window > **Commands** tab
+
+![Commands tab with export preview window showing scrollable CSV data](Examples/Screenshots/Commands.png)
+*The Commands tab with all exports and imports in one place. The Export Preview window (left) shows a scrollable DataGrid of the CSV data before you choose where to save it.*
 
 If you're new to this plugin, the **Commands tab is the best place to start**. It provides a centralized hub for all export and import operations in a single, user-friendly interface — no need to navigate individual tabs or remember NETLOAD command names.
 
@@ -197,6 +212,12 @@ For multi-file exports (Price Tables, Installation Times), the preview shows the
 ### Content Transfer (Export/Import Items)
 
 **Location:** FabAPI Window > **Manage Content** tab > **Export Items** / **Import Items** buttons
+
+![Export Items — select items from the folder tree and choose an output folder](Examples/Screenshots/ExportItems.png)
+*Export Items: Select .ITM files from the item folder tree (left), then choose an output folder (right). A manifest.json is generated with all database reference names.*
+
+![Import Items — reference validation with green (ok) and yellow (not found) indicators](Examples/Screenshots/ImportItems.png)
+*Import Items: Each item shows its database references with validation status. Green "(ok)" means the reference exists in the target configuration; yellow "(!) not found" means you need to assign a replacement from the dropdown.*
 
 This feature enables transferring `.itm` files (Fabrication item content) between different Fabrication configurations — for example, from a master/template configuration to a job-specific configuration.
 
@@ -285,6 +306,9 @@ The manifest captures reference **names** (not indices), which enables name-base
 
 **Location:** FabAPI Window > **Profiles** tab
 
+![Profiles tab with source profile selection, data type checkboxes, and Push to Profiles panel](Examples/Screenshots/Profiles.png)
+*The Profiles tab showing copy from Global profile with selective data type checkboxes (Price & Labor, Primary, Secondary groups), quick-select buttons, and the Push to Profiles panel for pushing to multiple named profiles at once.*
+
 Copies database files (`.MAP` files) between Fabrication profiles (e.g., from Global to a named profile, or between named profiles).
 
 #### How to Use
@@ -344,6 +368,12 @@ Many organizations store their Fabrication database on OneDrive, SharePoint-sync
 ---
 
 ### CSV Import
+
+![Price Lists tab with column mapping window for CSV import](Examples/Screenshots/PriceLists.png)
+*The Price Lists tab with the Column Mapping window open. Map your CSV columns to the expected import fields, preview the data, then import. Export and import buttons are highlighted at bottom-right.*
+
+![Installation Tables tab with breakpoint data and column mapping for import](Examples/Screenshots/InstallationTables.png)
+*The Installation Tables tab showing breakpoint table values with the Column Mapping window for importing installation times from CSV. Update, Import, and Export buttons are at the bottom-right.*
 
 #### Import Product List
 
@@ -465,6 +495,12 @@ The FabAPI window contains the following tabs:
 | **Commands** | **Centralized hub for all export/import operations with preview and progress** |
 | Application | View application paths, configuration info, What's New, and Resources |
 | **Profiles** | **Profile data copy between configurations with backup/restore** |
+
+![Application tab showing configuration info, What's New, and Resources](Examples/Screenshots/Application.png)
+*The Application tab displays the current Fabrication configuration details, a "Features Added in This Fork" summary, and a Resources section with a link to the GitHub README.*
+
+![Service Properties view with export and import service entries](Examples/Screenshots/ServiceProperties.png)
+*The Service Properties view showing detailed service entry data with export and import capabilities for service-level data.*
 
 ---
 
