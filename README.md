@@ -4,8 +4,8 @@ Extended Autodesk Fabrication API Sample plugin for CADmep / ESTmep / CAMduct (F
 
 > **This is a fork of [MartinMagallanes/FabricationSample](https://github.com/MartinMagallanes/FabricationSample)** with significant feature additions for production use. See [Summary of Extended Features](#summary-of-extended-features) below.
 
-![Main Window - Job Items tab with left navigation showing all available tabs and Item Swap buttons](Examples/Screenshots/MainWindow.png)
-*The FabAPI main window showing the Job Items tab with the full tab list on the left. The Swap Item and Undo Swap buttons (bottom-left) are extended features.*
+![Commands tab with centralized export and import operations](Examples/Screenshots/Commands.png)
+*The Commands tab — the recommended starting point. All export and import operations in one place, with a scrollable CSV preview before saving.*
 
 ## Authors and Credits
 
@@ -15,7 +15,7 @@ This project builds on the original Autodesk Fabrication API Sample (shipped wit
 |-------------|------|--------|
 | **Autodesk** | Original author of the Fabrication API Sample application with WPF UI, database editor tabs, and AutoCAD plugin framework. Shipped as part of the Fabrication SDK. | - |
 | **Martin Magallanes** | Updated the sample for post-2020 versions of AutoCAD, CADmep, and the Fabrication Suite. Original author of the NETLOAD export commands and DiscordCADmep. Made the project publicly accessible on GitHub. | [MartinMagallanes](https://github.com/MartinMagallanes) |
-| **Tyler Phillips** | Extended the application with NETLOAD export/import commands, Content Transfer (cross-config ITM export/import with reference re-resolution), Profile Data Copy, CSV import services, Item Swap with undo, and UI enhancements. | [Ty9112](https://github.com/Ty9112) |
+| **Tyler Phillips** | Extended the application with NETLOAD export/import commands, Content Transfer (cross-config ITM export/import with reference re-resolution), Profile Data Copy, CSV import services, and UI enhancements. | [Ty9112](https://github.com/Ty9112) |
 
 ### Referenced Repositories
 
@@ -23,7 +23,7 @@ This project builds on the original Autodesk Fabrication API Sample (shipped wit
 |------------|--------|-------------|
 | [FabricationSample](https://github.com/MartinMagallanes/FabricationSample) | Martin Magallanes | Fabrication API sample updated for post-2020 Fabrication versions (upstream) |
 | [DiscordCADmep](https://github.com/MartinMagallanes/DiscordCADmep) | Martin Magallanes | Simpler AutoCAD Fabrication plugin with NETLOAD export commands |
-| [fabrication-api-xmldocs](https://github.com/Ty9112/fabrication-api-xmldocs) | DugganIS | XML documentation extracted from FabricationAPI.chm for IntelliSense support |
+| [fabrication-api-xmldocs](https://github.com/DugganIS/fabrication-api-xmldocs) | DugganIS | XML documentation extracted from FabricationAPI.chm for IntelliSense support. Created by DugganIS — they did the hard work of extracting and structuring the XML docs from Autodesk's .CHM help file so developers can get IntelliSense in Visual Studio. |
 
 ---
 
@@ -33,8 +33,8 @@ This project builds on the original Autodesk Fabrication API Sample (shipped wit
 **Fabrication Version:** 2024
 **Programming Language:** C#
 **Type:** ExternalApplication
-<br/>**Subject:** Extended Fabrication API sample with content transfer, profile management, data export/import, and item swap.
-**Summary:** Builds on the original Autodesk Fabrication API Sample with cross-configuration content transfer (ITM export/import with reference re-resolution), profile data copy with selective cleanup and multi-profile push, CSV import/export services, and item swap with undo.
+<br/>**Subject:** Extended Fabrication API sample with content transfer, profile management, and data export/import.
+**Summary:** Builds on the original Autodesk Fabrication API Sample with cross-configuration content transfer (ITM export/import with reference re-resolution), profile data copy with selective cleanup and multi-profile push, and CSV import/export services.
 
 See the [Installation](#installation) section for setup instructions.
 
@@ -57,7 +57,7 @@ The following features have been added to the base Fabrication Sample applicatio
     - [Push to Profiles (Global Only)](#push-to-profiles-global-only)
     - [OneDrive and Network Storage Considerations](#onedrive-and-network-storage-considerations)
   - [CSV Import (Product List, Price List)](#csv-import)
-  - [Item Swap with Undo](#item-swap-with-undo)
+  - [Item Swap with Undo (Experimental)](#item-swap-with-undo-experimental)
 - [Feature Risk Guide](#feature-risk-guide)
 - [Tabs Reference](#tabs-reference)
 - [Project Structure](#project-structure)
@@ -149,9 +149,6 @@ The FabAPI window (`FabAPI` command) provides a tabbed interface for interacting
 ### Commands Tab (Recommended Starting Point)
 
 **Location:** FabAPI Window > **Commands** tab
-
-![Commands tab with export preview window showing scrollable CSV data](Examples/Screenshots/Commands.png)
-*The Commands tab with all exports and imports in one place. The Export Preview window (left) shows a scrollable DataGrid of the CSV data before you choose where to save it.*
 
 If you're new to this plugin, the **Commands tab is the best place to start**. It provides a centralized hub for all export and import operations in a single, user-friendly interface — no need to navigate individual tabs or remember NETLOAD command names.
 
@@ -400,9 +397,11 @@ Imports price list data from a CSV file.
 
 ---
 
-### Item Swap with Undo
+### Item Swap with Undo (Experimental)
 
-Swap items in the current job with different items from the database, with full undo support.
+> **Note:** This feature is experimental and has known positioning issues with undo. It has not been broadly tested. Use with caution and only in a non-production environment until further validation is complete. See [Known Bugs](#known-bugs) for details.
+
+Swap items in the current job with different items from the database, with undo support.
 
 1. Select items in the drawing
 2. Use the swap functionality to replace them with items from a different service or pattern
@@ -455,7 +454,7 @@ These features **copy or overwrite database files (.MAP files) and item files (.
 | **Push to Profiles** | Overwrites .MAP files across multiple profiles at once | Same backup protection, but applied to many profiles simultaneously — a mistake affects all targets |
 | **Content Transfer Export** | Copies .ITM files out — **read-only**, safe | No risk to source configuration |
 | **Content Transfer Import** | Copies .ITM files in and re-resolves database references | Can create items with unresolved references if names don't match; duplicate DB ID warning exists but proceeding overwrites existing items |
-| **Item Swap** | Replaces items in a drawing | Has undo, but restored items may not return to original coordinates (see Known Bugs) |
+| **Item Swap (Experimental)** | Replaces items in a drawing | Has undo, but restored items may not return to original coordinates. Not broadly tested — use in non-production environments only. See [Known Bugs](#known-bugs) |
 
 **Recommendations:**
 1. **Always leave "Create backup" checked** when using Profile Data Copy. This is on by default — don't turn it off
