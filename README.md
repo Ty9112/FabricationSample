@@ -51,12 +51,12 @@ The following features have been added to the base Fabrication Sample applicatio
 - [AutoCAD Commands (NETLOAD)](#autocad-commands-netload)
 - [FabAPI UI Features](#fabapi-ui-features)
   - [Commands Tab (Recommended Starting Point)](#commands-tab-recommended-starting-point)
-  - [Content Transfer (Export/Import Items)](#content-transfer-exportimport-items)
-  - [Profile Data Copy](#profile-data-copy)
+  - [CSV Export/Import (Product List, Price List)](#csv-import)
+  - [Profile Data Copy (Experimental)](#profile-data-copy-experimental)
     - [Selective Cleanup](#selective-cleanup)
     - [Push to Profiles (Global Only)](#push-to-profiles-global-only)
     - [OneDrive and Network Storage Considerations](#onedrive-and-network-storage-considerations)
-  - [CSV Import (Product List, Price List)](#csv-import)
+  - [Content Transfer (Experimental)](#content-transfer-experimental)
   - [Item Swap with Undo (Experimental)](#item-swap-with-undo-experimental)
 - [Feature Risk Guide](#feature-risk-guide)
 - [Tabs Reference](#tabs-reference)
@@ -206,7 +206,111 @@ For multi-file exports (Price Tables, Installation Times), the preview shows the
 
 ---
 
-### Content Transfer (Export/Import Items)
+### CSV Import
+
+This is the most stable and tested part of the plugin. Export and import operations for CSV data have been through the most iteration and testing.
+
+![Price Lists tab with column mapping window for CSV import](Examples/Screenshots/PriceLists.png)
+*The Price Lists tab with the Column Mapping window open. Map your CSV columns to the expected import fields, preview the data, then import. Export and import buttons are highlighted at bottom-right.*
+
+![Installation Tables tab with breakpoint data and column mapping for import](Examples/Screenshots/InstallationTables.png)
+*The Installation Tables tab showing breakpoint table values with the Column Mapping window for importing installation times from CSV. Update, Import, and Export buttons are at the bottom-right.*
+
+#### Import Product List
+
+**Command:** `ImportProductList` (NETLOAD) or via FabAPI UI
+
+Imports product list rows from a CSV file into the Fabrication database.
+
+1. Run the command or use the UI import function
+2. Select a CSV file
+3. A **Column Mapping** window appears — map your CSV columns to the expected fields:
+   - Name, Alias, Database ID, Order Number, Bought Out, Weight
+4. Preview the data to verify mappings
+5. Confirm to import the rows into the target product list
+
+#### Import Price List
+
+**Command:** `ImportPriceList` (NETLOAD) or via FabAPI UI
+
+Imports price list data from a CSV file.
+
+1. Run the command
+2. Select a CSV file and map columns
+3. Preview and confirm the import
+
+---
+
+### Profile Data Copy (Experimental)
+
+> **Note:** This feature is experimental. It overwrites .MAP files directly, so test on a non-critical profile with backups enabled before relying on it in production.
+
+**Location:** FabAPI Window > **Profiles** tab
+
+![Profiles tab with source profile selection, data type checkboxes, and Push to Profiles panel](Examples/Screenshots/Profiles.png)
+*The Profiles tab showing copy from Global profile with selective data type checkboxes (Price & Labor, Primary, Secondary groups), quick-select buttons, and the Push to Profiles panel for pushing to multiple named profiles at once.*
+
+Copies database files (`.MAP` files) between Fabrication profiles (e.g., from Global to a named profile, or between named profiles).
+
+#### How to Use
+
+1. Navigate to the **Profiles** tab
+2. Select a **Source Profile** from the dropdown (includes "Global" and all named profiles)
+3. Select a **Target Profile** (the profile you want to update)
+4. Choose which **Data Types** to copy using the checkboxes:
+   - Services, Materials, Specifications, Sections, Connectors, Seams
+   - Cost tables, Fabrication times, Installation/Estimation times
+   - Ancillaries, Dampers, Diameters, Suppliers, Layers
+   - Setup, Air turns, and more
+5. Click **Copy** to transfer the selected `.MAP` files
+6. A backup of the target profile's files is created automatically before overwriting
+7. Use **Restore Backup** to revert if needed
+
+#### Selective Cleanup
+
+For enumerable data types, click the data type name (underlined link) to open a **preview window** showing all items from the source. Uncheck items you don't want in the target profile. After the `.MAP` file is copied, a cleanup file is saved that automatically deletes the unwanted items when the target profile is loaded.
+
+Supported data types for selective cleanup:
+- **Price & Labor:** Suppliers, Costs / Price Lists, Installation Times
+- **Primary:** Services, Fabrication Times, Materials, Specifications, Sections, Ancillaries
+- **Secondary:** Connectors, Dampers, Stiffeners
+
+#### Push to Profiles (Global Only)
+
+When on the Global profile, the **Push to Profiles** panel appears. This lets you push selected data types from Global to multiple named profiles at once:
+
+1. Select data types and configure selective items (same as single-copy)
+2. Check one or more target profiles in the push panel
+3. Click **Push to Profiles**
+4. Each target receives the selected `.MAP` files, and if selective items were configured, a per-profile cleanup file (`_pending_cleanup.json`) is saved in each target's DATABASE folder
+5. When a target profile is loaded in a future session, the cleanup runs automatically and shows a summary of deleted items
+
+#### OneDrive and Network Storage Considerations
+
+Many organizations store their Fabrication database on OneDrive, SharePoint-synced folders, or network shares. Profile Data Copy writes `.MAP` files directly to these locations, which introduces several potential issues:
+
+**OneDrive / SharePoint Sync:**
+- **File locking:** OneDrive may hold a sync lock on `.MAP` files while uploading. If Profile Copy tries to overwrite a file that OneDrive is actively syncing, the copy can fail with an access denied error. The backup will have already been created, but the target file may be in an inconsistent state.
+- **Sync delays:** After copying `.MAP` files, OneDrive may take seconds to minutes to sync the changes to other machines. If another user loads the profile on their machine before sync completes, they'll get the old data.
+- **Conflict files:** If two users perform Profile Copy operations targeting the same profile simultaneously, OneDrive may create conflict copies (e.g., `Cost-DESKTOP-ABC123.MAP`) instead of overwriting. These conflict files are ignored by Fabrication and will cause the operations to appear to have no effect.
+- **Cleanup file sync:** The `_pending_cleanup.json` file is written to the target profile's DATABASE folder. If OneDrive syncs this file to another machine before the original cleanup runs, the cleanup could run on the wrong machine or run twice.
+
+**Network shares (UNC paths):**
+- File locking on network shares can behave differently than local drives. If another user has the target profile loaded in ESTmep/CADmep (which holds `.MAP` files open), the copy will fail.
+- Network latency can cause partial writes if the connection drops during a large `.MAP` file copy.
+
+**Recommendations:**
+1. **Coordinate with your team** — only one person should perform Profile Copy operations at a time, and other users should close ESTmep/CADmep before the copy begins
+2. **Pause OneDrive sync** before performing Profile Copy if your database is on a OneDrive-synced path (right-click the OneDrive tray icon > Pause syncing)
+3. **Wait for sync to complete** before having other users load the updated profiles
+4. **Always keep backups enabled** (the checkbox is on by default) — this creates a timestamped backup before any changes, which can be restored from the Profiles tab if something goes wrong
+5. **Check for conflict files** after a copy — look in the target profile's DATABASE folder for files with machine names appended. Delete these if found and re-run the copy.
+
+---
+
+### Content Transfer (Experimental)
+
+> **Note:** This feature is experimental. The export side is safe and read-only, but the import side re-resolves database references by name and has not been broadly tested across different configurations. Test in a non-production environment first.
 
 **Location:** FabAPI Window > **Manage Content** tab > **Export Items** / **Import Items** buttons
 
@@ -299,104 +403,6 @@ The manifest captures reference **names** (not indices), which enables name-base
 
 ---
 
-### Profile Data Copy
-
-**Location:** FabAPI Window > **Profiles** tab
-
-![Profiles tab with source profile selection, data type checkboxes, and Push to Profiles panel](Examples/Screenshots/Profiles.png)
-*The Profiles tab showing copy from Global profile with selective data type checkboxes (Price & Labor, Primary, Secondary groups), quick-select buttons, and the Push to Profiles panel for pushing to multiple named profiles at once.*
-
-Copies database files (`.MAP` files) between Fabrication profiles (e.g., from Global to a named profile, or between named profiles).
-
-#### How to Use
-
-1. Navigate to the **Profiles** tab
-2. Select a **Source Profile** from the dropdown (includes "Global" and all named profiles)
-3. Select a **Target Profile** (the profile you want to update)
-4. Choose which **Data Types** to copy using the checkboxes:
-   - Services, Materials, Specifications, Sections, Connectors, Seams
-   - Cost tables, Fabrication times, Installation/Estimation times
-   - Ancillaries, Dampers, Diameters, Suppliers, Layers
-   - Setup, Air turns, and more
-5. Click **Copy** to transfer the selected `.MAP` files
-6. A backup of the target profile's files is created automatically before overwriting
-7. Use **Restore Backup** to revert if needed
-
-#### Selective Cleanup
-
-For enumerable data types, click the data type name (underlined link) to open a **preview window** showing all items from the source. Uncheck items you don't want in the target profile. After the `.MAP` file is copied, a cleanup file is saved that automatically deletes the unwanted items when the target profile is loaded.
-
-Supported data types for selective cleanup:
-- **Price & Labor:** Suppliers, Costs / Price Lists, Installation Times
-- **Primary:** Services, Fabrication Times, Materials, Specifications, Sections, Ancillaries
-- **Secondary:** Connectors, Dampers, Stiffeners
-
-#### Push to Profiles (Global Only)
-
-When on the Global profile, the **Push to Profiles** panel appears. This lets you push selected data types from Global to multiple named profiles at once:
-
-1. Select data types and configure selective items (same as single-copy)
-2. Check one or more target profiles in the push panel
-3. Click **Push to Profiles**
-4. Each target receives the selected `.MAP` files, and if selective items were configured, a per-profile cleanup file (`_pending_cleanup.json`) is saved in each target's DATABASE folder
-5. When a target profile is loaded in a future session, the cleanup runs automatically and shows a summary of deleted items
-
-#### OneDrive and Network Storage Considerations
-
-Many organizations store their Fabrication database on OneDrive, SharePoint-synced folders, or network shares. Profile Data Copy writes `.MAP` files directly to these locations, which introduces several potential issues:
-
-**OneDrive / SharePoint Sync:**
-- **File locking:** OneDrive may hold a sync lock on `.MAP` files while uploading. If Profile Copy tries to overwrite a file that OneDrive is actively syncing, the copy can fail with an access denied error. The backup will have already been created, but the target file may be in an inconsistent state.
-- **Sync delays:** After copying `.MAP` files, OneDrive may take seconds to minutes to sync the changes to other machines. If another user loads the profile on their machine before sync completes, they'll get the old data.
-- **Conflict files:** If two users perform Profile Copy operations targeting the same profile simultaneously, OneDrive may create conflict copies (e.g., `Cost-DESKTOP-ABC123.MAP`) instead of overwriting. These conflict files are ignored by Fabrication and will cause the operations to appear to have no effect.
-- **Cleanup file sync:** The `_pending_cleanup.json` file is written to the target profile's DATABASE folder. If OneDrive syncs this file to another machine before the original cleanup runs, the cleanup could run on the wrong machine or run twice.
-
-**Network shares (UNC paths):**
-- File locking on network shares can behave differently than local drives. If another user has the target profile loaded in ESTmep/CADmep (which holds `.MAP` files open), the copy will fail.
-- Network latency can cause partial writes if the connection drops during a large `.MAP` file copy.
-
-**Recommendations:**
-1. **Coordinate with your team** — only one person should perform Profile Copy operations at a time, and other users should close ESTmep/CADmep before the copy begins
-2. **Pause OneDrive sync** before performing Profile Copy if your database is on a OneDrive-synced path (right-click the OneDrive tray icon > Pause syncing)
-3. **Wait for sync to complete** before having other users load the updated profiles
-4. **Always keep backups enabled** (the checkbox is on by default) — this creates a timestamped backup before any changes, which can be restored from the Profiles tab if something goes wrong
-5. **Check for conflict files** after a copy — look in the target profile's DATABASE folder for files with machine names appended. Delete these if found and re-run the copy.
-
----
-
-### CSV Import
-
-![Price Lists tab with column mapping window for CSV import](Examples/Screenshots/PriceLists.png)
-*The Price Lists tab with the Column Mapping window open. Map your CSV columns to the expected import fields, preview the data, then import. Export and import buttons are highlighted at bottom-right.*
-
-![Installation Tables tab with breakpoint data and column mapping for import](Examples/Screenshots/InstallationTables.png)
-*The Installation Tables tab showing breakpoint table values with the Column Mapping window for importing installation times from CSV. Update, Import, and Export buttons are at the bottom-right.*
-
-#### Import Product List
-
-**Command:** `ImportProductList` (NETLOAD) or via FabAPI UI
-
-Imports product list rows from a CSV file into the Fabrication database.
-
-1. Run the command or use the UI import function
-2. Select a CSV file
-3. A **Column Mapping** window appears — map your CSV columns to the expected fields:
-   - Name, Alias, Database ID, Order Number, Bought Out, Weight
-4. Preview the data to verify mappings
-5. Confirm to import the rows into the target product list
-
-#### Import Price List
-
-**Command:** `ImportPriceList` (NETLOAD) or via FabAPI UI
-
-Imports price list data from a CSV file.
-
-1. Run the command
-2. Select a CSV file and map columns
-3. Preview and confirm the import
-
----
-
 ### Item Swap with Undo (Experimental)
 
 > **Note:** This feature is experimental and has known positioning issues with undo. It has not been broadly tested. Use with caution and only in a non-production environment until further validation is complete. See [Known Bugs](#known-bugs) for details.
@@ -444,17 +450,17 @@ These features **modify records in the Fabrication database** by updating or add
 3. **Test on a non-production profile first.** Copy your profile, import into the copy, verify the results, then repeat on the real profile
 4. **Back up your .MAP files** before importing. Profile Data Copy's backup feature can help, or just manually copy the DATABASE folder
 
-### Higher Risk — File-Level Operations
+### Experimental — File-Level Operations (Test in Non-Production First)
 
-These features **copy or overwrite database files (.MAP files) and item files (.ITM files)**. They operate at the file level, which means mistakes can affect the entire profile or configuration.
+These features **copy or overwrite database files (.MAP files) and item files (.ITM files)**. They operate at the file level, which means mistakes can affect the entire profile or configuration. All features in this tier are considered experimental and should be tested in a non-production environment first.
 
 | Feature | Risk | Mitigation |
 |---------|------|-----------|
-| **Profile Data Copy** | Overwrites target profile's .MAP files | Automatic backup created before copy; can restore from Profiles tab |
-| **Push to Profiles** | Overwrites .MAP files across multiple profiles at once | Same backup protection, but applied to many profiles simultaneously — a mistake affects all targets |
+| **Profile Data Copy (Experimental)** | Overwrites target profile's .MAP files | Automatic backup created before copy; can restore from Profiles tab |
+| **Push to Profiles (Experimental)** | Overwrites .MAP files across multiple profiles at once | Same backup protection, but applied to many profiles simultaneously — a mistake affects all targets |
 | **Content Transfer Export** | Copies .ITM files out — **read-only**, safe | No risk to source configuration |
-| **Content Transfer Import** | Copies .ITM files in and re-resolves database references | Can create items with unresolved references if names don't match; duplicate DB ID warning exists but proceeding overwrites existing items |
-| **Item Swap (Experimental)** | Replaces items in a drawing | Has undo, but restored items may not return to original coordinates. Not broadly tested — use in non-production environments only. See [Known Bugs](#known-bugs) |
+| **Content Transfer Import (Experimental)** | Copies .ITM files in and re-resolves database references | Can create items with unresolved references if names don't match; duplicate DB ID warning exists but proceeding overwrites existing items |
+| **Item Swap (Experimental)** | Replaces items in a drawing | Has undo, but restored items may not return to original coordinates. Not broadly tested. See [Known Bugs](#known-bugs) |
 
 **Recommendations:**
 1. **Always leave "Create backup" checked** when using Profile Data Copy. This is on by default — don't turn it off
