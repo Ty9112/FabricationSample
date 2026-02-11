@@ -76,7 +76,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
 
                     // Show column mapping dialog
                     var requiredFields = new[] { "DatabaseId", "Cost" };
-                    var optionalFields = new[] { "DiscountCode", "Units", "Status" };
+                    var optionalFields = new[] { "DiscountCode", "Units", "Status", "Date" };
 
                     var mappingWindow = new ColumnMappingWindow(
                         importFile, requiredFields, optionalFields);
@@ -99,7 +99,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     }
 
                     // Create import service
-                    var importService = new PriceTableImportService(priceList);
+                    var importService = new PriceTableImportService(priceList, _sg);
 
                     // Validate file with column mapping
                     var validation = importService.Validate(importFile, options);
@@ -164,7 +164,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     importService.ProgressChanged += (s, args) =>
                     {
                         // Update progress on UI thread
-                        Dispatcher.Invoke(() =>
+                        SafeInvoke(() =>
                         {
                             prgPriceList.Value = args.Percentage;
                         });
@@ -351,7 +351,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     // Import
                     importService.ProgressChanged += (s, args) =>
                     {
-                        Dispatcher.Invoke(() => { prgInstallationTimes.Value = args.Percentage; });
+                        SafeInvoke(() => { prgInstallationTimes.Value = args.Percentage; });
                     };
 
                     var result = importService.Import(importFile, options);
@@ -649,7 +649,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     // Import
                     importService.ProgressChanged += (s, args) =>
                     {
-                        Dispatcher.Invoke(() => { prgProductDatabase.Value = args.Percentage; });
+                        SafeInvoke(() => { prgProductDatabase.Value = args.Percentage; });
                     };
 
                     var result = importService.Import(importFile, options);
@@ -785,7 +785,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     // Import
                     importService.ProgressChanged += (s, args) =>
                     {
-                        Dispatcher.Invoke(() => { prgSupplierDiscounts.Value = args.Percentage; });
+                        SafeInvoke(() => { prgSupplierDiscounts.Value = args.Percentage; });
                     };
 
                     var result = importService.Import(importFile, options);

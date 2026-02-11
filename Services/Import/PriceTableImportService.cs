@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Autodesk.Fabrication.DB;
 
@@ -11,25 +12,39 @@ namespace FabricationSample.Services.Import
     ///
     /// CSV Format:
     /// - Required columns: DatabaseId, Cost
-    /// - Optional columns: DiscountCode, Units, Status
+    /// - Optional columns: DiscountCode, Units, Status, Date
     /// - First row must be header
+    /// - Rows with unparseable values in Cost, Status, Units, Discount, or Date are skipped
     ///
     /// Example:
-    /// DatabaseId,Cost,DiscountCode,Units,Status
-    /// PROD-001,125.50,A,per(ft),Active
-    /// PROD-002,89.00,B,(each),Active
+    /// DatabaseId,Cost,DiscountCode,Units,Status,Date
+    /// PROD-001,125.50,A,per(ft),Active,15/01/2024
+    /// PROD-002,89.00,B,(each),Active,20/03/2024
     /// </summary>
     public class PriceTableImportService : CsvImportService
     {
         private readonly PriceList _priceList;
+        private readonly SupplierGroup _supplierGroup;
+
+        /// <summary>
+        /// Date formats accepted during import (dd/MM/yyyy primary, others as fallback).
+        /// </summary>
+        private static readonly string[] DateFormats = new[]
+        {
+            "dd/MM/yyyy", "d/MM/yyyy", "dd/M/yyyy", "d/M/yyyy",
+            "MM/dd/yyyy", "M/dd/yyyy", "MM/d/yyyy", "M/d/yyyy",
+            "yyyy-MM-dd"
+        };
 
         /// <summary>
         /// Create a new price table import service for the specified price list.
         /// </summary>
         /// <param name="priceList">The price list to import data into</param>
-        public PriceTableImportService(PriceList priceList)
+        /// <param name="supplierGroup">The supplier group for discount code validation (optional)</param>
+        public PriceTableImportService(PriceList priceList, SupplierGroup supplierGroup = null)
         {
             _priceList = priceList ?? throw new ArgumentNullException(nameof(priceList));
+            _supplierGroup = supplierGroup;
         }
 
         /// <summary>
@@ -49,25 +64,31 @@ namespace FabricationSample.Services.Import
         {
             var result = new ValidationResult { IsValid = true };
 
-            // Validate DatabaseId
+            // Validate DatabaseId -- this is the only hard error (row cannot be identified without it)
             var databaseId = GetFieldValue(headers, fields, "DatabaseId", CurrentOptions);
             if (string.IsNullOrWhiteSpace(databaseId))
             {
                 result.Errors.Add(new ValidationError(lineNumber, "DatabaseId cannot be empty"));
                 result.IsValid = false;
+                return result;
             }
 
+            // All other field issues are warnings -- row will be skipped during import
             // Validate Cost
             var costStr = GetFieldValue(headers, fields, "Cost", CurrentOptions);
-            if (!TryParseDouble(costStr, out double cost))
+            if (IsNaValue(costStr))
             {
-                result.Errors.Add(new ValidationError(lineNumber, $"Invalid cost value: '{costStr}'"));
-                result.IsValid = false;
+                // N/A is valid -- row will be skipped during import
             }
-            else if (cost < 0)
+            else if (!string.IsNullOrWhiteSpace(costStr) && !TryParseDouble(costStr, out double cost))
             {
-                result.Errors.Add(new ValidationError(lineNumber, "Cost cannot be negative"));
-                result.IsValid = false;
+                result.Warnings.Add(new ValidationWarning(lineNumber,
+                    $"Unparseable cost value '{costStr}' — row will be skipped during import."));
+            }
+            else if (TryParseDouble(costStr, out double costVal) && costVal < 0)
+            {
+                result.Warnings.Add(new ValidationWarning(lineNumber,
+                    $"Negative cost value ({costVal}) — row will be skipped during import."));
             }
 
             // Validate Status if present
@@ -79,7 +100,32 @@ namespace FabricationSample.Services.Import
                     !status.Equals("Discon", StringComparison.OrdinalIgnoreCase))
                 {
                     result.Warnings.Add(new ValidationWarning(lineNumber,
-                        $"Unknown status value '{status}'. Valid values: Active, POA, Discon. Defaulting to Active."));
+                        $"Unknown status '{status}' — field will be ignored. Valid values: Active, POA, Discon."));
+                }
+            }
+
+            // Validate Date if present
+            var dateStr = GetFieldValue(headers, fields, "Date", CurrentOptions);
+            if (!string.IsNullOrWhiteSpace(dateStr) && !IsNaValue(dateStr) &&
+                !dateStr.Equals("None", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!DateTime.TryParseExact(dateStr, DateFormats, CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out _))
+                {
+                    result.Warnings.Add(new ValidationWarning(lineNumber,
+                        $"Unparseable date '{dateStr}' — field will be ignored."));
+                }
+            }
+
+            // Validate DiscountCode if present and supplier group available
+            var discountCode = GetFieldValue(headers, fields, "DiscountCode", CurrentOptions);
+            if (!string.IsNullOrWhiteSpace(discountCode) && _supplierGroup != null)
+            {
+                var discount = _supplierGroup.Discounts.Discounts.FirstOrDefault(x => x.Code == discountCode);
+                if (discount == null)
+                {
+                    result.Warnings.Add(new ValidationWarning(lineNumber,
+                        $"Discount code '{discountCode}' not found in supplier group — field will be ignored."));
                 }
             }
 
@@ -107,7 +153,33 @@ namespace FabricationSample.Services.Import
 
                 var fields = ParseCsvLine(line, options.Delimiter);
                 var databaseId = GetFieldValue(headers, fields, "DatabaseId", options);
-                var cost = GetFieldValue(headers, fields, "Cost", options);
+                var costStr = GetFieldValue(headers, fields, "Cost", options);
+
+                // Skip N/A cost values
+                if (IsNaValue(costStr))
+                {
+                    preview.SkippedRecordCount++;
+                    preview.Changes.Add(new PreviewChange
+                    {
+                        LineNumber = lineNumber,
+                        ChangeType = "Skip",
+                        Description = $"Skip {databaseId} — cost is N/A"
+                    });
+                    continue;
+                }
+
+                // Skip rows with unparseable cost
+                if (!TryParseDouble(costStr, out double costVal) || costVal < 0)
+                {
+                    preview.SkippedRecordCount++;
+                    preview.Changes.Add(new PreviewChange
+                    {
+                        LineNumber = lineNumber,
+                        ChangeType = "Skip",
+                        Description = $"Skip {databaseId} — invalid cost value '{costStr}'"
+                    });
+                    continue;
+                }
 
                 // Check if entry already exists
                 var existingEntry = _priceList.Products.FirstOrDefault(p =>
@@ -129,7 +201,7 @@ namespace FabricationSample.Services.Import
                             },
                             NewValues = new Dictionary<string, string>
                             {
-                                { "Cost", cost }
+                                { "Cost", costStr }
                             }
                         });
                     }
@@ -155,7 +227,7 @@ namespace FabricationSample.Services.Import
                         NewValues = new Dictionary<string, string>
                         {
                             { "DatabaseId", databaseId },
-                            { "Cost", cost }
+                            { "Cost", costStr }
                         }
                     });
                 }
@@ -179,6 +251,7 @@ namespace FabricationSample.Services.Import
                 int discountIndex = FindColumnIndex(headers, "DiscountCode", options);
                 int unitsIndex = FindColumnIndex(headers, "Units", options);
                 int statusIndex = FindColumnIndex(headers, "Status", options);
+                int dateIndex = FindColumnIndex(headers, "Date", options);
 
                 int startLine = options.HasHeaderRow ? 1 : 0;
                 int totalRows = lines.Count - startLine;
@@ -209,13 +282,19 @@ namespace FabricationSample.Services.Import
                     var databaseId = fields[dbIdIndex];
                     var costStr = fields[costIndex];
 
-                    // Parse cost
-                    if (!TryParseDouble(costStr, out double cost))
+                    // Skip N/A cost values
+                    if (IsNaValue(costStr))
                     {
-                        result.Errors[lineNumber] = $"Invalid cost value: {costStr}";
-                        result.ErrorCount++;
-                        if (options.StopOnFirstError)
-                            break;
+                        result.SkippedCount++;
+                        processedRows++;
+                        continue;
+                    }
+
+                    // Skip rows with unparseable or negative cost
+                    if (!TryParseDouble(costStr, out double cost) || cost < 0)
+                    {
+                        result.SkippedCount++;
+                        processedRows++;
                         continue;
                     }
 
@@ -229,40 +308,7 @@ namespace FabricationSample.Services.Import
                         {
                             // Update existing entry
                             existingEntry.Value = cost;
-
-                            // Update discount code if provided
-                            if (discountIndex >= 0 && discountIndex < fields.Count)
-                            {
-                                var discountCode = fields[discountIndex];
-                                if (!string.IsNullOrWhiteSpace(discountCode))
-                                    existingEntry.DiscountCode = discountCode;
-                            }
-
-                            // Update units if provided
-                            if (unitsIndex >= 0 && unitsIndex < fields.Count)
-                            {
-                                var units = fields[unitsIndex];
-                                if (!string.IsNullOrWhiteSpace(units))
-                                {
-                                    existingEntry.CostedByLength = units.IndexOf("per(ft)", StringComparison.OrdinalIgnoreCase) >= 0;
-                                }
-                            }
-
-                            // Update status if provided
-                            if (statusIndex >= 0 && statusIndex < fields.Count)
-                            {
-                                var status = fields[statusIndex];
-                                if (!string.IsNullOrWhiteSpace(status))
-                                {
-                                    if (status.Equals("Active", StringComparison.OrdinalIgnoreCase))
-                                        existingEntry.Status = ProductEntryStatus.Active;
-                                    else if (status.Equals("POA", StringComparison.OrdinalIgnoreCase))
-                                        existingEntry.Status = ProductEntryStatus.PriceOnApplication;
-                                    else if (status.Equals("Discon", StringComparison.OrdinalIgnoreCase))
-                                        existingEntry.Status = ProductEntryStatus.Discontinued;
-                                }
-                            }
-
+                            ApplyOptionalFields(existingEntry, fields, discountIndex, unitsIndex, statusIndex, dateIndex);
                             result.ImportedCount++;
                         }
                         else
@@ -283,40 +329,7 @@ namespace FabricationSample.Services.Import
                             if (newEntry != null)
                             {
                                 newEntry.Value = cost;
-
-                                // Set discount code if provided
-                                if (discountIndex >= 0 && discountIndex < fields.Count)
-                                {
-                                    var discountCode = fields[discountIndex];
-                                    if (!string.IsNullOrWhiteSpace(discountCode))
-                                        newEntry.DiscountCode = discountCode;
-                                }
-
-                                // Set units if provided
-                                if (unitsIndex >= 0 && unitsIndex < fields.Count)
-                                {
-                                    var units = fields[unitsIndex];
-                                    if (!string.IsNullOrWhiteSpace(units))
-                                    {
-                                        newEntry.CostedByLength = units.IndexOf("per(ft)", StringComparison.OrdinalIgnoreCase) >= 0;
-                                    }
-                                }
-
-                                // Set status if provided
-                                if (statusIndex >= 0 && statusIndex < fields.Count)
-                                {
-                                    var status = fields[statusIndex];
-                                    if (!string.IsNullOrWhiteSpace(status))
-                                    {
-                                        if (status.Equals("Active", StringComparison.OrdinalIgnoreCase))
-                                            newEntry.Status = ProductEntryStatus.Active;
-                                        else if (status.Equals("POA", StringComparison.OrdinalIgnoreCase))
-                                            newEntry.Status = ProductEntryStatus.PriceOnApplication;
-                                        else if (status.Equals("Discon", StringComparison.OrdinalIgnoreCase))
-                                            newEntry.Status = ProductEntryStatus.Discontinued;
-                                    }
-                                }
-
+                                ApplyOptionalFields(newEntry, fields, discountIndex, unitsIndex, statusIndex, dateIndex);
                                 result.ImportedCount++;
                             }
                         }
@@ -349,6 +362,78 @@ namespace FabricationSample.Services.Import
                 result.IsSuccess = false;
                 result.ErrorMessage = $"Import failed: {ex.Message}";
                 return result;
+            }
+        }
+
+        /// <summary>
+        /// Apply optional field values (discount, units, status, date) to a product entry.
+        /// Invalid or unparseable values are silently skipped per field — the row is still imported.
+        /// </summary>
+        private void ApplyOptionalFields(ProductEntry entry, List<string> fields,
+            int discountIndex, int unitsIndex, int statusIndex, int dateIndex)
+        {
+            // Set discount code if provided and valid against supplier group
+            if (discountIndex >= 0 && discountIndex < fields.Count)
+            {
+                var discountCode = fields[discountIndex];
+                if (!string.IsNullOrWhiteSpace(discountCode))
+                {
+                    if (_supplierGroup != null)
+                    {
+                        // Validate against supplier group's discount list
+                        var discount = _supplierGroup.Discounts.Discounts
+                            .FirstOrDefault(x => x.Code == discountCode);
+                        if (discount != null)
+                            entry.DiscountCode = discount.Code;
+                    }
+                    else
+                    {
+                        // No supplier group available — set directly
+                        entry.DiscountCode = discountCode;
+                    }
+                }
+            }
+
+            // Set units if provided
+            if (unitsIndex >= 0 && unitsIndex < fields.Count)
+            {
+                var units = fields[unitsIndex];
+                if (!string.IsNullOrWhiteSpace(units))
+                {
+                    entry.CostedByLength = units.IndexOf("per(ft)", StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+            }
+
+            // Set status if provided and valid
+            if (statusIndex >= 0 && statusIndex < fields.Count)
+            {
+                var status = fields[statusIndex];
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    if (status.Equals("Active", StringComparison.OrdinalIgnoreCase))
+                        entry.Status = ProductEntryStatus.Active;
+                    else if (status.Equals("POA", StringComparison.OrdinalIgnoreCase))
+                        entry.Status = ProductEntryStatus.PriceOnApplication;
+                    else if (status.Equals("Discon", StringComparison.OrdinalIgnoreCase))
+                        entry.Status = ProductEntryStatus.Discontinued;
+                    // Unknown status values are silently ignored
+                }
+            }
+
+            // Set date if provided and parseable
+            if (dateIndex >= 0 && dateIndex < fields.Count)
+            {
+                var dateStr = fields[dateIndex];
+                if (!string.IsNullOrWhiteSpace(dateStr) && !IsNaValue(dateStr) &&
+                    !dateStr.Equals("None", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (DateTime.TryParseExact(dateStr, DateFormats, CultureInfo.InvariantCulture,
+                        DateTimeStyles.None, out DateTime dateVal))
+                    {
+                        entry.Date = dateVal;
+                    }
+                    // Unparseable dates are silently ignored
+                }
             }
         }
     }

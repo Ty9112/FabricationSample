@@ -32,8 +32,9 @@ namespace FabricationSample
         public void Terminate()
         {
             try { win?.Close(); } catch { }
-            try { Database.Clear(); } catch { }
-            try { ProductDatabase.Clear(); } catch { }
+            // Database.Clear() and ProductDatabase.Clear() removed —
+            // they can trigger internal Fabrication API threads that block
+            // AppDomain unload. The process is exiting; OS reclaims resources.
         }
     }
 
@@ -41,6 +42,11 @@ namespace FabricationSample
     {
         public static string AcadYear { get; private set; }
         FabricationWindow _win = null;
+
+        /// <summary>
+        /// Check this before Dispatcher calls to avoid deadlocks during shutdown.
+        /// </summary>
+        public static bool IsShuttingDown { get; private set; }
 
         [CommandMethod("FabAPI", "FabAPI", CommandFlags.Modal)]
         public void RunFabApi()
@@ -65,13 +71,26 @@ namespace FabricationSample
                 Assembly.LoadFrom($@"C:\Program Files\Autodesk\Fabrication {AcadYear}\CADmep\FabricationAPI.dll");
             }
             catch { }
+
             Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument.Editor.WriteMessage("\nLoaded FabricationSample add-in!");
         }
 
         public void Terminate()
         {
-            try { Database.Clear(); } catch { }
-            try { ProductDatabase.Clear(); } catch { }
+            // Set shutdown flag first — this prevents background threads from
+            // calling Dispatcher.Invoke, which would deadlock and prevent the
+            // AppDomain from unloading (CannotUnloadAppDomainException).
+            IsShuttingDown = true;
+
+            // Close the window if still open
+            try { _win?.Close(); } catch { }
+            _win = null;
+
+            // Do NOT call Database.Clear() or ProductDatabase.Clear() here.
+            // These Fabrication API calls can spin up internal threads or access
+            // native resources that block AppDomain unload, causing the
+            // CannotUnloadAppDomainException and triggering Autodesk CER.
+            // The process is exiting — OS will reclaim all resources.
         }
 
         #region Fabrication API Checking routines

@@ -400,6 +400,22 @@ namespace FabricationSample.Services.Import
         }
 
         /// <summary>
+        /// Check if a field value represents a non-applicable value (N/A, NA, n/a, etc.)
+        /// that should be skipped rather than treated as an error.
+        /// </summary>
+        protected bool IsNaValue(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var trimmed = value.Trim();
+            return trimmed.Equals("N/A", StringComparison.OrdinalIgnoreCase) ||
+                   trimmed.Equals("NA", StringComparison.OrdinalIgnoreCase) ||
+                   trimmed.Equals("#N/A", StringComparison.OrdinalIgnoreCase) ||
+                   trimmed.Equals("-", StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Helper to parse double value from field.
         /// </summary>
         protected bool TryParseDouble(string value, out double result)

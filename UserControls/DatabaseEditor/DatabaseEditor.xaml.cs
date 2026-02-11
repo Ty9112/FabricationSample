@@ -117,10 +117,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
 
       void _bgwInstallationtimes_ProgressChanged(object sender, ProgressChangedEventArgs e)
       {
-         this.Dispatcher.Invoke(delegate
-         {
-            prgInstallationTimes.Value = e.ProgressPercentage;
-         });
+         SafeInvoke(() => prgInstallationTimes.Value = e.ProgressPercentage);
       }
 
       void _bgwInstallationtimes_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -144,10 +141,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
 
       void _bgwFabtimes_ProgressChanged(object sender, ProgressChangedEventArgs e)
       {
-         this.Dispatcher.Invoke(delegate
-         {
-            prgFabTimes.Value = e.ProgressPercentage;
-         });
+         SafeInvoke(() => prgFabTimes.Value = e.ProgressPercentage);
       }
 
       void _bgwFabTimes_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -162,10 +156,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
 
       void _bgwPrices_ProgressChanged(object sender, ProgressChangedEventArgs e)
       {
-         this.Dispatcher.Invoke(delegate
-         {
-            prgPriceList.Value = e.ProgressPercentage;
-         });
+         SafeInvoke(() => prgPriceList.Value = e.ProgressPercentage);
       }
 
       void _bgwPrices_DoWork(object sender, DoWorkEventArgs e)
@@ -180,6 +171,24 @@ namespace FabricationSample.UserControls.DatabaseEditor
             worker.ReportProgress(i);
             i++;
          }
+      }
+
+      #endregion
+
+      #region Shutdown-Safe Dispatcher
+
+      /// <summary>
+      /// Invoke an action on the UI thread, but only if the application is not shutting down.
+      /// Uses BeginInvoke (non-blocking) to prevent deadlocks during AppDomain unload.
+      /// </summary>
+      protected void SafeInvoke(Action action)
+      {
+         if (ACADSample.IsShuttingDown) return;
+         try
+         {
+            Dispatcher.BeginInvoke(action);
+         }
+         catch { }
       }
 
       #endregion

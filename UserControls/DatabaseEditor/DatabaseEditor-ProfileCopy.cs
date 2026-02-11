@@ -631,7 +631,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
 
         private void ProfileCopyService_ProgressChanged(object sender, CopyProgressEventArgs e)
         {
-            Dispatcher.Invoke(() =>
+            SafeInvoke(() =>
             {
                 prgProfileCopy.Value = e.PercentComplete;
                 txtProfileCopyStatus.Text = e.Message;
@@ -781,7 +781,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     var target = targetProfiles[i];
                     string progressMsg = $"Pushing to {target.Name} ({i + 1}/{targetProfiles.Count})...";
 
-                    Dispatcher.Invoke(() =>
+                    SafeInvoke(() =>
                     {
                         prgPushProgress.Value = (double)i / targetProfiles.Count * 100;
                         txtPushStatus.Text = progressMsg;
@@ -808,7 +808,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                 }
 
                 // Show summary
-                Dispatcher.Invoke(() =>
+                SafeInvoke(() =>
                 {
                     prgPushProgress.Value = 100;
                     txtPushStatus.Text = "Push complete.";

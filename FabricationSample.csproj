@@ -81,8 +81,8 @@
     <Compile Include="Commands\ExportCommands.cs" />
     <Compile Include="Commands\ImportCommands.cs" />
     <Compile Include="Data\DataMapping.cs" />
-    <Compile Include="Examples\FabricationAPIACADExamples.cs" />
-    <Compile Include="Examples\FabricationAPIExamples.cs" />
+    <Compile Include="Examples\Development\FabricationAPIACADExamples.cs" />
+    <Compile Include="Examples\Development\FabricationAPIExamples.cs" />
     <Compile Include="FabricationWindow.xaml.cs">
       <DependentUpon>FabricationWindow.xaml</DependentUpon>
     </Compile>

@@ -34,7 +34,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
             // Use Dispatcher to ensure UI updates happen on the UI thread
             if (!Dispatcher.CheckAccess())
             {
-                Dispatcher.Invoke(() => UpdateUndoButtonState());
+                SafeInvoke(() => UpdateUndoButtonState());
             }
             else
             {
@@ -50,7 +50,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
             // Ensure we're on the UI thread
             if (!Dispatcher.CheckAccess())
             {
-                Dispatcher.Invoke(() => UpdateUndoButtonState());
+                SafeInvoke(() => UpdateUndoButtonState());
                 return;
             }
 

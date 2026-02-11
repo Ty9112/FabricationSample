@@ -286,7 +286,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
           {
             exportService.ProgressChanged += (s, args) =>
             {
-              Dispatcher.Invoke(() => { prgSections.Value = args.Percentage; });
+              SafeInvoke(() => { prgSections.Value = args.Percentage; });
             };
 
             var result = exportService.Export(saveDialog.FileName);
@@ -410,7 +410,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
           // Import
           importService.ProgressChanged += (s, args) =>
           {
-            Dispatcher.Invoke(() => { prgSections.Value = args.Percentage; });
+            SafeInvoke(() => { prgSections.Value = args.Percentage; });
           };
 
           var result = importService.Import(importFile, options);

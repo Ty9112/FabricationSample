@@ -77,7 +77,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                         var exportService = new SpecificationsExportService();
                         exportService.ProgressChanged += (s, args) =>
                         {
-                            Dispatcher.Invoke(() => { prgSpecifications.Value = args.Percentage; });
+                            SafeInvoke(() => { prgSpecifications.Value = args.Percentage; });
                         };
 
                         var options = new ExportOptions { IncludeHeader = true };
@@ -211,7 +211,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     // Import
                     importService.ProgressChanged += (s, args) =>
                     {
-                        Dispatcher.Invoke(() => { prgSpecifications.Value = args.Percentage; });
+                        SafeInvoke(() => { prgSpecifications.Value = args.Percentage; });
                     };
 
                     var result = importService.Import(importFile, options);

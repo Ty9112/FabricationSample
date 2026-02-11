@@ -473,11 +473,16 @@ namespace FabricationSample.ProfileCopy.Windows
 
         private void CopyService_ProgressChanged(object sender, CopyProgressEventArgs e)
         {
-            Dispatcher.Invoke(() =>
+            if (ACADSample.IsShuttingDown) return;
+            try
             {
-                prgCopy.Value = e.PercentComplete;
-                txtStatus.Text = e.Message;
-            });
+                Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    prgCopy.Value = e.PercentComplete;
+                    txtStatus.Text = e.Message;
+                }));
+            }
+            catch { }
         }
 
         private void btnCancel_Click(object sender, RoutedEventArgs e)

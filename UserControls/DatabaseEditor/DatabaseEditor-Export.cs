@@ -92,14 +92,14 @@ namespace FabricationSample.UserControls.DatabaseEditor
                         };
                         _exportWorker.ProgressChanged += (s, args) =>
                         {
-                            this.Dispatcher.Invoke(() =>
+                            SafeInvoke(() =>
                             {
                                 prgPriceList.Value = args.ProgressPercentage;
                             });
                         };
                         _exportWorker.RunWorkerCompleted += (s, args) =>
                         {
-                            this.Dispatcher.Invoke(() =>
+                            SafeInvoke(() =>
                             {
                                 prgPriceList.Value = 0;
 
@@ -206,14 +206,14 @@ namespace FabricationSample.UserControls.DatabaseEditor
                         };
                         _exportWorker.ProgressChanged += (s, args) =>
                         {
-                            this.Dispatcher.Invoke(() =>
+                            SafeInvoke(() =>
                             {
                                 prgInstallationTimes.Value = args.ProgressPercentage;
                             });
                         };
                         _exportWorker.RunWorkerCompleted += (s, args) =>
                         {
-                            this.Dispatcher.Invoke(() =>
+                            SafeInvoke(() =>
                             {
                                 prgInstallationTimes.Value = 0;
 
@@ -305,7 +305,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                         };
                         _exportWorker.RunWorkerCompleted += (s, args) =>
                         {
-                            this.Dispatcher.Invoke(() =>
+                            SafeInvoke(() =>
                             {
                                 if (args.Error != null)
                                 {
@@ -508,7 +508,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                         };
                         _exportWorker.RunWorkerCompleted += (s, args) =>
                         {
-                            this.Dispatcher.Invoke(() =>
+                            SafeInvoke(() =>
                             {
                                 if (args.Error != null)
                                 {
@@ -710,7 +710,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                         };
                         exportWorker.RunWorkerCompleted += (s, args) =>
                         {
-                            this.Dispatcher.Invoke(() =>
+                            SafeInvoke(() =>
                             {
                                 if (args.Error != null)
                                 {
@@ -858,7 +858,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                         };
                         exportWorker.RunWorkerCompleted += (s, args) =>
                         {
-                            this.Dispatcher.Invoke(() =>
+                            SafeInvoke(() =>
                             {
                                 if (args.Error != null)
                                 {
