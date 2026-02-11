@@ -85,7 +85,7 @@ namespace FabricationSample.Services.Import
 
                 // Find matching service
                 var service = FabDB.Services.FirstOrDefault(s =>
-                    s.Name.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                    s.Name != null && s.Name.Trim().Equals(serviceName, StringComparison.OrdinalIgnoreCase));
 
                 if (service == null)
                 {
@@ -107,7 +107,7 @@ namespace FabricationSample.Services.Import
                     {
                         if (tab.ServiceButtons == null) continue;
                         matchedButton = tab.ServiceButtons.FirstOrDefault(b =>
-                            b.Name != null && b.Name.Equals(buttonName, StringComparison.OrdinalIgnoreCase));
+                            b.Name != null && b.Name.Trim().Equals(buttonName, StringComparison.OrdinalIgnoreCase));
                         if (matchedButton != null) break;
                     }
                 }

@@ -102,7 +102,7 @@ namespace FabricationSample.Services.Import
 
                 // Find matching service
                 var service = FabDB.Services.FirstOrDefault(s =>
-                    s.Name.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                    s.Name != null && s.Name.Trim().Equals(serviceName, StringComparison.OrdinalIgnoreCase));
 
                 if (service == null)
                 {
@@ -116,10 +116,11 @@ namespace FabricationSample.Services.Import
                     continue;
                 }
 
-                // Find matching entry by service type description
+                // Find matching entry by service type description (trim to handle leading spaces in API descriptions)
+                var trimmedType = serviceType.Trim();
                 var entry = service.ServiceEntries?.FirstOrDefault(e =>
                     e.ServiceType?.Description != null &&
-                    e.ServiceType.Description.Equals(serviceType, StringComparison.OrdinalIgnoreCase));
+                    e.ServiceType.Description.Trim().Equals(trimmedType, StringComparison.OrdinalIgnoreCase));
 
                 if (entry == null)
                 {
@@ -208,7 +209,7 @@ namespace FabricationSample.Services.Import
 
                     // Find matching service
                     var service = FabDB.Services.FirstOrDefault(s =>
-                        s.Name.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                        s.Name != null && s.Name.Trim().Equals(serviceName, StringComparison.OrdinalIgnoreCase));
 
                     if (service == null)
                     {
@@ -217,10 +218,11 @@ namespace FabricationSample.Services.Import
                         continue;
                     }
 
-                    // Find matching entry by service type description
+                    // Find matching entry by service type description (trim to handle leading spaces in API descriptions)
+                    var trimmedType = serviceType.Trim();
                     var entry = service.ServiceEntries?.FirstOrDefault(e =>
                         e.ServiceType?.Description != null &&
-                        e.ServiceType.Description.Equals(serviceType, StringComparison.OrdinalIgnoreCase));
+                        e.ServiceType.Description.Trim().Equals(trimmedType, StringComparison.OrdinalIgnoreCase));
 
                     if (entry == null)
                     {
@@ -257,14 +259,14 @@ namespace FabricationSample.Services.Import
                     }
 
                     var levelBlock = GetFieldValue(headers, fields, "Level Block", options);
-                    if (!string.IsNullOrEmpty(levelBlock) && levelBlock != entry.LevelBlock)
+                    if (!string.IsNullOrEmpty(levelBlock) && !IsNaValue(levelBlock) && levelBlock != entry.LevelBlock)
                     {
                         entry.LevelBlock = levelBlock;
                         updated = true;
                     }
 
                     var sizeBlock = GetFieldValue(headers, fields, "Size Block", options);
-                    if (!string.IsNullOrEmpty(sizeBlock) && sizeBlock != entry.SizeBlock)
+                    if (!string.IsNullOrEmpty(sizeBlock) && !IsNaValue(sizeBlock) && sizeBlock != entry.SizeBlock)
                     {
                         entry.SizeBlock = sizeBlock;
                         updated = true;

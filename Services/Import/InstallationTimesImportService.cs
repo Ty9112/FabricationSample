@@ -90,8 +90,9 @@ namespace FabricationSample.Services.Import
                     if (simple != null && !(table is InstallationTimesTableWithBreakpoints))
                     {
                         // Use name as key (may have duplicates across groups, use first match)
-                        if (!tableCache.ContainsKey(table.Name))
-                            tableCache[table.Name] = simple;
+                        var trimmedName = table.Name?.Trim() ?? "";
+                        if (!tableCache.ContainsKey(trimmedName))
+                            tableCache[trimmedName] = simple;
                     }
                 }
             }

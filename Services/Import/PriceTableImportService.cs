@@ -376,7 +376,7 @@ namespace FabricationSample.Services.Import
             if (discountIndex >= 0 && discountIndex < fields.Count)
             {
                 var discountCode = fields[discountIndex];
-                if (!string.IsNullOrWhiteSpace(discountCode))
+                if (!string.IsNullOrWhiteSpace(discountCode) && !IsNaValue(discountCode))
                 {
                     if (_supplierGroup != null)
                     {

@@ -272,7 +272,7 @@ namespace FabricationSample.Services.Import
             if (string.IsNullOrWhiteSpace(serviceName)) return null;
 
             var service = FabDB.Services.FirstOrDefault(s =>
-                s.Name.Equals(serviceName, StringComparison.OrdinalIgnoreCase));
+                s.Name != null && s.Name.Trim().Equals(serviceName, StringComparison.OrdinalIgnoreCase));
 
             if (service?.ServiceTemplate?.ServiceTabs == null) return null;
 
@@ -290,7 +290,7 @@ namespace FabricationSample.Services.Import
             foreach (var service in FabDB.Services)
             {
                 if (service.ServiceTemplate == null) continue;
-                if (!service.ServiceTemplate.Name.Equals(templateName, StringComparison.OrdinalIgnoreCase)) continue;
+                if (service.ServiceTemplate.Name == null || !service.ServiceTemplate.Name.Trim().Equals(templateName, StringComparison.OrdinalIgnoreCase)) continue;
 
                 if (service.ServiceTemplate.ServiceTabs == null) continue;
 
@@ -312,14 +312,14 @@ namespace FabricationSample.Services.Import
 
                 // Match tab by name
                 bool tabMatches = tab.Name != null &&
-                    tab.Name.Equals(tabName, StringComparison.OrdinalIgnoreCase);
+                    tab.Name.Trim().Equals(tabName, StringComparison.OrdinalIgnoreCase);
 
                 if (!tabMatches) continue;
 
                 foreach (var button in tab.ServiceButtons)
                 {
                     if (button.Name != null &&
-                        button.Name.Equals(buttonName, StringComparison.OrdinalIgnoreCase))
+                        button.Name.Trim().Equals(buttonName, StringComparison.OrdinalIgnoreCase))
                     {
                         return button;
                     }

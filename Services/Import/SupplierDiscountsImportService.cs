@@ -66,8 +66,8 @@ namespace FabricationSample.Services.Import
             var supplierGroupLookup = new Dictionary<string, SupplierGroup>(StringComparer.OrdinalIgnoreCase);
             foreach (var sg in Database.SupplierGroups)
             {
-                if (!string.IsNullOrEmpty(sg.Name) && !supplierGroupLookup.ContainsKey(sg.Name))
-                    supplierGroupLookup[sg.Name] = sg;
+                if (!string.IsNullOrEmpty(sg.Name) && !supplierGroupLookup.ContainsKey(sg.Name.Trim()))
+                    supplierGroupLookup[sg.Name.Trim()] = sg;
             }
 
             for (int i = startLine; i < lines.Count; i++)
@@ -98,7 +98,7 @@ namespace FabricationSample.Services.Import
 
                 // Find existing discount by code
                 var existingDiscount = supplierGroup.Discounts?.Discounts?
-                    .FirstOrDefault(d => d.Code != null && d.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+                    .FirstOrDefault(d => d.Code != null && d.Code.Trim().Equals(code, StringComparison.OrdinalIgnoreCase));
 
                 if (existingDiscount == null)
                 {
@@ -216,7 +216,7 @@ namespace FabricationSample.Services.Import
 
                     // Find existing discount
                     var discount = supplierGroup.Discounts?.Discounts?
-                        .FirstOrDefault(d => d.Code != null && d.Code.Equals(code, StringComparison.OrdinalIgnoreCase));
+                        .FirstOrDefault(d => d.Code != null && d.Code.Trim().Equals(code, StringComparison.OrdinalIgnoreCase));
 
                     if (discount == null)
                     {

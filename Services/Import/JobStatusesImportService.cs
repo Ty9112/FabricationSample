@@ -76,7 +76,7 @@ namespace FabricationSample.Services.Import
             int startLine = options.HasHeaderRow ? 1 : 0;
 
             var existingStatuses = Database.JobStatuses.ToDictionary(
-                s => s.Description?.ToLowerInvariant() ?? "", s => s);
+                s => s.Description?.Trim().ToLowerInvariant() ?? "", s => s);
 
             for (int i = startLine; i < lines.Count; i++)
             {
@@ -127,7 +127,7 @@ namespace FabricationSample.Services.Import
             int current = 0;
 
             var existingStatuses = Database.JobStatuses.ToDictionary(
-                s => s.Description?.ToLowerInvariant() ?? "", s => s);
+                s => s.Description?.Trim().ToLowerInvariant() ?? "", s => s);
 
             for (int i = startLine; i < lines.Count; i++)
             {

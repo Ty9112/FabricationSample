@@ -120,7 +120,7 @@ namespace FabricationSample.Services.Import
                     {
                         var supplierIdDef = existingDef.SupplierIds.FirstOrDefault(s =>
                             s.ProductSupplier != null &&
-                            s.ProductSupplier.Name.Equals(supplierName, StringComparison.OrdinalIgnoreCase));
+                            s.ProductSupplier.Name.Trim().Equals(supplierName, StringComparison.OrdinalIgnoreCase));
 
                         if (supplierIdDef != null)
                         {
@@ -233,7 +233,7 @@ namespace FabricationSample.Services.Import
                         {
                             var supplierIdDef = def.SupplierIds.FirstOrDefault(s =>
                                 s.ProductSupplier != null &&
-                                s.ProductSupplier.Name.Equals(supplierName, StringComparison.OrdinalIgnoreCase));
+                                s.ProductSupplier.Name.Trim().Equals(supplierName, StringComparison.OrdinalIgnoreCase));
 
                             if (supplierIdDef != null)
                             {
