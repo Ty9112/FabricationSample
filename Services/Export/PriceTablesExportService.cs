@@ -95,7 +95,8 @@ namespace FabricationSample.Services.Export
                                 var costedByLength = entry.CostedByLength;
                                 var date = entry.Date.HasValue ? entry.Date.Value.ToString("dd/MM/yyyy") : "None";
                                 var discountCode = entry.DiscountCode;
-                                var status = entry.Status;
+                                var status = entry.Status == ProductEntryStatus.Active ? "Active" :
+                                    entry.Status == ProductEntryStatus.PriceOnApplication ? "POA" : "Discon";
                                 var value = entry.Value;
 
                                 priceListCsv.Add(CsvHelpers.WrapForCsv(
@@ -106,7 +107,7 @@ namespace FabricationSample.Services.Export
                                     discountCode,
                                     costedByLength ? "per(ft)" : "(each)",
                                     date,
-                                    status.ToString()
+                                    status
                                 ));
                             }
                         }

@@ -55,14 +55,29 @@
                     BorderThickness="1"
                     Margin="0,0,0,5">
                 <StackPanel>
-                    <Label Content="Data Preview (first 10 rows)"
-                           Foreground="White"
-                           FontSize="11"
-                           FontWeight="SemiBold"/>
+                    <DockPanel Margin="5,2,5,2">
+                        <Label x:Name="lblPreview" Content="Data Preview"
+                               Foreground="White"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               DockPanel.Dock="Left"
+                               Padding="0,3"/>
+                        <CheckBox x:Name="chkHasHeaders"
+                                  Content="My data has headers"
+                                  Foreground="#FFCCCCCC"
+                                  FontSize="11"
+                                  VerticalAlignment="Center"
+                                  DockPanel.Dock="Right"
+                                  HorizontalAlignment="Right"
+                                  Margin="0,0,5,0"
+                                  IsChecked="True"
+                                  Checked="chkHasHeaders_Changed"
+                                  Unchecked="chkHasHeaders_Changed"/>
+                    </DockPanel>
                     <DataGrid x:Name="dgPreview"
                               AutoGenerateColumns="True"
                               IsReadOnly="True"
-                              MaxHeight="250"
+                              MaxHeight="300"
                               Background="#FF1E1E1E"
                               Foreground="White"
                               RowBackground="#FF2D2D30"
@@ -71,7 +86,10 @@
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
                               GridLinesVisibility="None"
-                              BorderThickness="0">
+                              BorderThickness="0"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto"
+                              ScrollViewer.CanContentScroll="True">
                         <DataGrid.ColumnHeaderStyle>
                             <Style TargetType="DataGridColumnHeader">
                                 <Setter Property="Background" Value="#FF3F3F46"/>

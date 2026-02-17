@@ -97,7 +97,9 @@ namespace FabricationSample.Services.Import
             {
                 if (!status.Equals("Active", StringComparison.OrdinalIgnoreCase) &&
                     !status.Equals("POA", StringComparison.OrdinalIgnoreCase) &&
-                    !status.Equals("Discon", StringComparison.OrdinalIgnoreCase))
+                    !status.Equals("PriceOnApplication", StringComparison.OrdinalIgnoreCase) &&
+                    !status.Equals("Discon", StringComparison.OrdinalIgnoreCase) &&
+                    !status.Equals("Discontinued", StringComparison.OrdinalIgnoreCase))
                 {
                     result.Warnings.Add(new ValidationWarning(lineNumber,
                         $"Unknown status '{status}' — field will be ignored. Valid values: Active, POA, Discon."));
@@ -119,7 +121,7 @@ namespace FabricationSample.Services.Import
 
             // Validate DiscountCode if present and supplier group available
             var discountCode = GetFieldValue(headers, fields, "DiscountCode", CurrentOptions);
-            if (!string.IsNullOrWhiteSpace(discountCode) && _supplierGroup != null)
+            if (!string.IsNullOrWhiteSpace(discountCode) && !IsNaValue(discountCode) && _supplierGroup != null)
             {
                 var discount = _supplierGroup.Discounts.Discounts.FirstOrDefault(x => x.Code == discountCode);
                 if (discount == null)
@@ -412,11 +414,12 @@ namespace FabricationSample.Services.Import
                 {
                     if (status.Equals("Active", StringComparison.OrdinalIgnoreCase))
                         entry.Status = ProductEntryStatus.Active;
-                    else if (status.Equals("POA", StringComparison.OrdinalIgnoreCase))
+                    else if (status.Equals("POA", StringComparison.OrdinalIgnoreCase) ||
+                             status.Equals("PriceOnApplication", StringComparison.OrdinalIgnoreCase))
                         entry.Status = ProductEntryStatus.PriceOnApplication;
-                    else if (status.Equals("Discon", StringComparison.OrdinalIgnoreCase))
+                    else if (status.Equals("Discon", StringComparison.OrdinalIgnoreCase) ||
+                             status.Equals("Discontinued", StringComparison.OrdinalIgnoreCase))
                         entry.Status = ProductEntryStatus.Discontinued;
-                    // Unknown status values are silently ignored
                 }
             }
 

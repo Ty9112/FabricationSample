@@ -22,6 +22,13 @@ namespace FabricationSample
 
         private ObservableCollection<ColumnMappingField> _mappingFields;
 
+        // Stored state for re-processing when toggling header checkbox
+        private string[] _rawLines;
+        private char _delimiter;
+        private IEnumerable<string> _requiredFields;
+        private IEnumerable<string> _optionalFields;
+        private bool _isInitializing;
+
         /// <summary>
         /// CSV column names plus "-- Skip --" as options for ComboBoxes.
         /// </summary>
@@ -36,6 +43,12 @@ namespace FabricationSample
         /// True if user clicked Continue, false if cancelled.
         /// </summary>
         public bool DialogResultOk { get; private set; }
+
+        /// <summary>
+        /// Whether the user indicated their data has headers.
+        /// Callers should use this to set ImportOptions.HasHeaderRow.
+        /// </summary>
+        public bool HasHeaders => chkHasHeaders.IsChecked == true;
 
         /// <summary>
         /// Create the column mapping window.
@@ -53,6 +66,10 @@ namespace FabricationSample
             InitializeComponent();
             DataContext = this;
 
+            _requiredFields = requiredFields;
+            _optionalFields = optionalFields;
+            _delimiter = delimiter;
+
             LoadCsvData(csvFilePath, requiredFields, optionalFields, delimiter);
         }
 
@@ -64,52 +81,137 @@ namespace FabricationSample
         {
             try
             {
-                var lines = File.ReadAllLines(csvFilePath, Encoding.UTF8);
-                if (lines.Length == 0) return;
+                _isInitializing = true;
+                _rawLines = File.ReadAllLines(csvFilePath, Encoding.UTF8);
+                if (_rawLines.Length == 0) return;
 
-                // Parse header
-                var csvHeaders = ParseCsvLine(lines[0], delimiter);
+                // Parse first row to check if it looks like headers
+                var firstRowValues = ParseCsvLine(_rawLines[0], delimiter);
+                bool looksLikeHeaders = DetectHeaders(firstRowValues, requiredFields, optionalFields);
 
-                // Build ComboBox options: "-- Skip --" first, then actual columns
-                CsvColumnOptions = new List<string> { SkipOption };
-                CsvColumnOptions.AddRange(csvHeaders);
+                chkHasHeaders.IsChecked = looksLikeHeaders;
+                _isInitializing = false;
 
-                // Build mapping fields
-                _mappingFields = new ObservableCollection<ColumnMappingField>();
-
-                foreach (var field in requiredFields)
-                {
-                    _mappingFields.Add(new ColumnMappingField
-                    {
-                        FieldName = field,
-                        IsRequired = true,
-                        SelectedCsvColumn = SkipOption
-                    });
-                }
-
-                foreach (var field in optionalFields)
-                {
-                    _mappingFields.Add(new ColumnMappingField
-                    {
-                        FieldName = field,
-                        IsRequired = false,
-                        SelectedCsvColumn = SkipOption
-                    });
-                }
-
-                mappingsList.ItemsSource = _mappingFields;
-
-                // Auto-map on initial load
-                AutoMapColumns(csvHeaders);
-
-                // Load preview data
-                LoadPreview(lines, csvHeaders, delimiter);
+                // Build the UI based on header detection
+                RebuildMappingUI(looksLikeHeaders);
             }
             catch (Exception ex)
             {
+                _isInitializing = false;
                 MessageBox.Show($"Error reading CSV file: {ex.Message}",
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// Detect whether the first row looks like column headers by checking
+        /// if any values match or partially match the expected field names.
+        /// Also checks if values look like data (numbers, dates) rather than labels.
+        /// </summary>
+        private bool DetectHeaders(List<string> firstRowValues,
+            IEnumerable<string> requiredFields, IEnumerable<string> optionalFields)
+        {
+            var allFields = requiredFields.Concat(optionalFields).ToList();
+
+            // Count how many first-row values match expected field names
+            int matchCount = 0;
+            foreach (var value in firstRowValues)
+            {
+                var trimmed = value.Trim();
+                if (string.IsNullOrEmpty(trimmed)) continue;
+
+                foreach (var field in allFields)
+                {
+                    if (trimmed.Equals(field, StringComparison.OrdinalIgnoreCase) ||
+                        trimmed.IndexOf(field, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        field.IndexOf(trimmed, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        matchCount++;
+                        break;
+                    }
+                }
+            }
+
+            // If at least 2 values match field names, it's likely a header row
+            if (matchCount >= 2)
+                return true;
+
+            // If most values are numeric, it's probably data, not headers
+            int numericCount = firstRowValues.Count(v =>
+                double.TryParse(v.Trim(), out _) || DateTime.TryParse(v.Trim(), out _));
+            if (numericCount > firstRowValues.Count / 2)
+                return false;
+
+            // Default: if we have at least 1 match, treat as headers
+            return matchCount >= 1;
+        }
+
+        /// <summary>
+        /// Rebuild the entire mapping UI and preview based on the current header setting.
+        /// </summary>
+        private void RebuildMappingUI(bool hasHeaders)
+        {
+            if (_rawLines == null || _rawLines.Length == 0) return;
+
+            var firstRowValues = ParseCsvLine(_rawLines[0], _delimiter);
+            int columnCount = firstRowValues.Count;
+
+            List<string> csvHeaders;
+
+            if (hasHeaders)
+            {
+                // Use actual first-row values as headers
+                csvHeaders = firstRowValues;
+            }
+            else
+            {
+                // Generate numbered column headers: "Col 1", "Col 2", etc.
+                csvHeaders = new List<string>();
+                for (int i = 0; i < columnCount; i++)
+                    csvHeaders.Add($"Col {i + 1}");
+            }
+
+            // Build ComboBox options
+            CsvColumnOptions = new List<string> { SkipOption };
+            CsvColumnOptions.AddRange(csvHeaders);
+
+            // Build mapping fields
+            _mappingFields = new ObservableCollection<ColumnMappingField>();
+
+            foreach (var field in _requiredFields)
+            {
+                _mappingFields.Add(new ColumnMappingField
+                {
+                    FieldName = field,
+                    IsRequired = true,
+                    SelectedCsvColumn = SkipOption
+                });
+            }
+
+            foreach (var field in _optionalFields)
+            {
+                _mappingFields.Add(new ColumnMappingField
+                {
+                    FieldName = field,
+                    IsRequired = false,
+                    SelectedCsvColumn = SkipOption
+                });
+            }
+
+            mappingsList.ItemsSource = _mappingFields;
+
+            // Notify bindings that CsvColumnOptions changed
+            // (ItemsControl ComboBoxes bind to this via RelativeSource)
+            // Force rebind by resetting DataContext
+            DataContext = null;
+            DataContext = this;
+            mappingsList.ItemsSource = _mappingFields;
+
+            // Auto-map columns
+            AutoMapColumns(csvHeaders);
+
+            // Load preview
+            LoadPreview(_rawLines, csvHeaders, _delimiter, hasHeaders);
         }
 
         private void AutoMapColumns(List<string> csvHeaders)
@@ -138,7 +240,7 @@ namespace FabricationSample
             }
         }
 
-        private void LoadPreview(string[] lines, List<string> headers, char delimiter)
+        private void LoadPreview(string[] lines, List<string> headers, char delimiter, bool hasHeaders)
         {
             try
             {
@@ -153,9 +255,11 @@ namespace FabricationSample
                     table.Columns.Add(uniqueName);
                 }
 
-                // Load up to 10 data rows
-                int maxPreviewRows = Math.Min(11, lines.Length); // line 0 is header
-                for (int i = 1; i < maxPreviewRows; i++)
+                // Determine start row: skip first row if it's headers, otherwise include it
+                int startRow = hasHeaders ? 1 : 0;
+                int maxPreviewRows = lines.Length;
+
+                for (int i = startRow; i < maxPreviewRows; i++)
                 {
                     var fields = ParseCsvLine(lines[i], delimiter);
                     var row = table.NewRow();
@@ -167,11 +271,22 @@ namespace FabricationSample
                 }
 
                 dgPreview.ItemsSource = table.DefaultView;
+                lblPreview.Content = $"Data Preview ({table.Rows.Count} row{(table.Rows.Count == 1 ? "" : "s")})";
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading preview: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Handle "My data has headers" checkbox toggle.
+        /// Rebuilds column options, mapping, and preview.
+        /// </summary>
+        private void chkHasHeaders_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_isInitializing) return;
+            RebuildMappingUI(chkHasHeaders.IsChecked == true);
         }
 
         private List<string> ParseCsvLine(string line, char delimiter)

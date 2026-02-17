@@ -210,6 +210,7 @@
                         <Button Name="btnExportProductGrid" Margin="10,0" Width="120" Click="btnExportProductGrid_Click">Export Grid</Button>
                         <Button Name="btnGetProductInfo" Margin="10,0" Width="150" Click="btnGetProductInfo_Click">Export Full Product Info</Button>
                         <Button Name="btnImportProductDatabase" Margin="10,0" Width="160" Click="btnImportProductDatabase_Click">Import Product Database</Button>
+                        <Button Name="btnPasteImportProductDatabase" Margin="10,0" Width="100" Click="btnPasteImportProductDatabase_Click" ToolTip="Import product data from clipboard">Paste Import</Button>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,10">
                         <ProgressBar x:Name="prgProductDatabase" Height="20" Width="400" Margin="10,0" VerticalAlignment="Center" Minimum="0"/>
@@ -260,6 +261,7 @@
                     <ProgressBar x:Name="prgPriceList" Height="20" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Minimum="0"/>
                     <Button x:Name="btnUpdatePrices" Height="25" Width="100" Click="btnUpdatePrices_Click" Content="Update Prices" HorizontalAlignment="Right" Margin="10,0,10,0" DockPanel.Dock="Right"/>
                     <Button x:Name="btnImportPriceList" Height="25" Width="120" Click="btnImportPriceList_Click" Content="Import Price List" HorizontalAlignment="Right" Margin="0,0,0,0" DockPanel.Dock="Right"/>
+                    <Button x:Name="btnPasteImportPriceList" Height="25" Width="80" Click="btnPasteImportPriceList_Click" Content="Paste Import" HorizontalAlignment="Right" Margin="0,0,0,0" DockPanel.Dock="Right" ToolTip="Import price list data from clipboard (copy from ESTmep or spreadsheet)"/>
                     <Button x:Name="btnExportPriceTables" Height="25" Width="120" Click="btnExportPriceTables_Click" Content="Export Price Tables" HorizontalAlignment="Right" Margin="0,0,0,0" DockPanel.Dock="Right"/>
                 </DockPanel>
             </Grid>
@@ -295,6 +297,7 @@
                     <Button Name="btnDeleteDiscount" Content="Delete Discount" Width="100" Margin="10,0,0,0" Click="DeleteDiscount_Click" IsEnabled="False"></Button>
                     <Button Name="btnExportSupplierDiscounts" Content="Export Discounts" Width="120" Margin="10,0,0,0" Click="btnExportSupplierDiscounts_Click"></Button>
                     <Button Name="btnImportSupplierDiscounts" Content="Import Discounts" Width="120" Margin="10,0,0,0" Click="btnImportSupplierDiscounts_Click"></Button>
+                    <Button Name="btnPasteImportSupplierDiscounts" Content="Paste Import" Width="90" Margin="10,0,0,0" Click="btnPasteImportSupplierDiscounts_Click" ToolTip="Import discount data from clipboard"></Button>
                     <ProgressBar Name="prgSupplierDiscounts" Width="150" Height="20" Margin="10,0,0,0" Minimum="0" Maximum="100" Value="0"/>
                 </DockPanel>
             </Grid>
@@ -423,6 +426,8 @@
                             Click="btnExportInstallationTimes_Click" Content="Export Installation Times" Height="25" HorizontalAlignment="Right" Margin="0,0,10,0" DockPanel.Dock="Right"/>
                     <Button x:Name="btnImportInstallationTimes" Width="170"
                             Click="btnImportInstallationTimes_Click" Content="Import Installation Times" Height="25" HorizontalAlignment="Right" Margin="0,0,0,0" DockPanel.Dock="Right"/>
+                    <Button x:Name="btnPasteImportInstallationTimes" Width="80"
+                            Click="btnPasteImportInstallationTimes_Click" Content="Paste Import" Height="25" HorizontalAlignment="Right" Margin="0,0,0,0" DockPanel.Dock="Right" ToolTip="Import installation times from clipboard"/>
                     <Button x:Name="btnUpdateInstallationTimes" Width="150"
                             Click="btnUpdateInstallationTimes_Click" Content="Update Installation Times" Height="25" HorizontalAlignment="Right" Margin="0,0,0,0" DockPanel.Dock="Right"/>
                 </DockPanel>
@@ -531,6 +536,7 @@
                     <Button x:Name="btnDeleteItemStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Delete Item Status" Margin="0,0,0,0" Click="btnDeleteItemStatuses_Click"/>
                     <Button x:Name="btnExportItemStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Export Item Statuses" Margin="10,0,0,0" Click="btnExportItemStatuses_Click"/>
                     <Button x:Name="btnImportItemStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Import Item Statuses" Margin="10,0,0,0" Click="btnImportItemStatuses_Click"/>
+                    <Button x:Name="btnPasteImportItemStatuses" Width="90" Height="24" HorizontalAlignment="Left" Content="Paste Import" Margin="10,0,0,0" Click="btnPasteImportItemStatuses_Click" ToolTip="Import item statuses from clipboard"/>
                     <Button x:Name="btnUpdateItemStatuses" Width="133" Height="24" HorizontalAlignment="Right" Content="Update Item Statuses" Margin="60,0,0,0" Click="btnUpdateItemStatuses_Click"/>
                 </StackPanel>
             </Grid>
@@ -573,6 +579,7 @@
                     <Button x:Name="btnDeleteJobStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Delete Job Status" Margin="0,0,0,0" Click="btnDeleteJobStatuses_Click"/>
                     <Button x:Name="btnExportJobStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Export Job Statuses" Margin="10,0,0,0" Click="btnExportJobStatuses_Click"/>
                     <Button x:Name="btnImportJobStatuses" Width="133" Height="24" HorizontalAlignment="Left" Content="Import Job Statuses" Margin="10,0,0,0" Click="btnImportJobStatuses_Click"/>
+                    <Button x:Name="btnPasteImportJobStatuses" Width="90" Height="24" HorizontalAlignment="Left" Content="Paste Import" Margin="10,0,0,0" Click="btnPasteImportJobStatuses_Click" ToolTip="Import job statuses from clipboard"/>
                     <Button x:Name="btnUpdateJobStatuses" Width="133" Height="24" HorizontalAlignment="Right" Content="Update Job Statuses" Margin="60,0,0,0" Click="btnUpdateJobStatuses_Click"/>
                 </StackPanel>
             </StackPanel>
@@ -659,6 +666,7 @@
                         <Button Content="Export Item Data" Width="115" Height="25" Margin="0,2,5,2" Click="btnExportItemData_Click"/>
                         <Button Content="Export Button Report" Width="140" Height="25" Margin="0,2,5,2" Click="btnExportButtonReport_Click"/>
                         <Button Content="Import Button Report" Width="140" Height="25" Margin="0,2,5,2" Click="btnImportButtonReport_Click"/>
+                        <Button Content="Paste Button Report" Width="140" Height="25" Margin="0,2,5,2" Click="btnPasteImportButtonReport_Click" ToolTip="Import button report data from clipboard"/>
                     </WrapPanel>
 
                     <!-- Service Template -->
@@ -764,6 +772,7 @@
                         <Button Content="Save" Width="90" Click="btnSaveServiceTemplates_Click" Margin="10,0,0,0"></Button>
                         <Button Content="Export Button Report" Width="155" Click="btnExportTemplateButtonReport_Click" Margin="10,0,0,0"/>
                         <Button Content="Import Button Report" Width="155" Click="btnImportTemplateButtonReport_Click" Margin="10,0,0,0"/>
+                        <Button Content="Paste Button Report" Width="155" Click="btnPasteImportTemplateButtonReport_Click" Margin="10,0,0,0" ToolTip="Import button report data from clipboard"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                         <Label Content="Service Template Conditions" FontWeight="Bold" HorizontalAlignment="Center" />

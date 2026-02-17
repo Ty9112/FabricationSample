@@ -62,7 +62,9 @@ namespace FabricationSample.Services.Import
             {
                 if (!status.Equals("Active", StringComparison.OrdinalIgnoreCase) &&
                     !status.Equals("POA", StringComparison.OrdinalIgnoreCase) &&
-                    !status.Equals("Discon", StringComparison.OrdinalIgnoreCase))
+                    !status.Equals("PriceOnApplication", StringComparison.OrdinalIgnoreCase) &&
+                    !status.Equals("Discon", StringComparison.OrdinalIgnoreCase) &&
+                    !status.Equals("Discontinued", StringComparison.OrdinalIgnoreCase))
                 {
                     result.Warnings.Add(new ValidationWarning(lineNumber,
                         $"Unknown status value '{status}'. Valid: Active, POA, Discon. Defaulting to Active."));
@@ -247,9 +249,11 @@ namespace FabricationSample.Services.Import
                         {
                             if (status.Equals("Active", StringComparison.OrdinalIgnoreCase))
                                 existingEntry.Status = ProductEntryStatus.Active;
-                            else if (status.Equals("POA", StringComparison.OrdinalIgnoreCase))
+                            else if (status.Equals("POA", StringComparison.OrdinalIgnoreCase) ||
+                                     status.Equals("PriceOnApplication", StringComparison.OrdinalIgnoreCase))
                                 existingEntry.Status = ProductEntryStatus.PriceOnApplication;
-                            else if (status.Equals("Discon", StringComparison.OrdinalIgnoreCase))
+                            else if (status.Equals("Discon", StringComparison.OrdinalIgnoreCase) ||
+                                     status.Equals("Discontinued", StringComparison.OrdinalIgnoreCase))
                                 existingEntry.Status = ProductEntryStatus.Discontinued;
                         }
 
@@ -277,9 +281,11 @@ namespace FabricationSample.Services.Import
                                 {
                                     if (status.Equals("Active", StringComparison.OrdinalIgnoreCase))
                                         newEntry.Status = ProductEntryStatus.Active;
-                                    else if (status.Equals("POA", StringComparison.OrdinalIgnoreCase))
+                                    else if (status.Equals("POA", StringComparison.OrdinalIgnoreCase) ||
+                                             status.Equals("PriceOnApplication", StringComparison.OrdinalIgnoreCase))
                                         newEntry.Status = ProductEntryStatus.PriceOnApplication;
-                                    else if (status.Equals("Discon", StringComparison.OrdinalIgnoreCase))
+                                    else if (status.Equals("Discon", StringComparison.OrdinalIgnoreCase) ||
+                                             status.Equals("Discontinued", StringComparison.OrdinalIgnoreCase))
                                         newEntry.Status = ProductEntryStatus.Discontinued;
                                 }
 

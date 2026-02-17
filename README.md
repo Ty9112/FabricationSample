@@ -52,6 +52,8 @@ The following features have been added to the base Fabrication Sample applicatio
 - [FabAPI UI Features](#fabapi-ui-features)
   - [Commands Tab (Recommended Starting Point)](#commands-tab-recommended-starting-point)
   - [CSV Export/Import (Product List, Price List)](#csv-import)
+    - [Paste Import (Clipboard)](#paste-import-clipboard)
+    - [Column Mapping Window Enhancements](#column-mapping-window-enhancements)
   - [Profile Data Copy (Experimental)](#profile-data-copy-experimental)
     - [Selective Cleanup](#selective-cleanup)
     - [Push to Profiles (Global Only)](#push-to-profiles-global-only)
@@ -238,6 +240,31 @@ Imports price list data from a CSV file.
 1. Run the command
 2. Select a CSV file and map columns
 3. Preview and confirm the import
+
+#### Paste Import (Clipboard)
+
+Every tab with an import button also has a **Paste Import** button. This replicates the traditional ESTmep workflow where you copy tabular data from a spreadsheet or ESTmep's grid and paste it directly into the import pipeline.
+
+**How to use:**
+1. Copy data from ESTmep, Excel, or any spreadsheet (rows and columns)
+2. Click **Paste Import** on the relevant tab (Price Lists, Product Database, Installation Times, Supplier Discounts, Item Statuses, Job Statuses, Services, or Service Templates)
+3. The Column Mapping window opens with the pasted data
+4. Map columns to import fields, preview the data, and confirm
+
+**Delimiter detection:** Tab-separated data (from ESTmep/Excel) and comma-separated data are both auto-detected. The delimiter with more occurrences in the first row wins.
+
+**Available on all import tabs:**
+- Price Lists, Product Database, Supplier Discounts
+- Installation Times, Item Statuses, Job Statuses
+- Services (Button Report), Service Templates (Button Report)
+
+#### Column Mapping Window Enhancements
+
+The Column Mapping window (used by both file import and paste import) has been enhanced with:
+
+- **"My data has headers" checkbox** — Auto-detects whether the first row contains column headers by matching values against expected field names. When unchecked, columns are labeled `Col 1`, `Col 2`, etc. and the first row is treated as data (not skipped during import). Toggle at any time to re-map columns.
+- **Scrollable data preview** — The preview shows all data rows (not just the first 10) with both vertical and horizontal scrolling via mouse hover, matching the behavior of the main tab DataGrids.
+- **Dynamic row count** — The preview label shows the actual number of data rows (e.g., "Data Preview (247 rows)").
 
 ---
 
@@ -443,6 +470,7 @@ These features **modify records in the Fabrication database** by updating or add
 | **Import Supplier Discounts** | Updates discount codes | Limited scope — only affects discount values |
 | **Import Button Report** | Updates service template button codes | Only modifies matching buttons by service/tab/name |
 | **Import Price List** | Updates price list entries | Requires selecting the target price list first on the Price Lists tab |
+| **Paste Import (all tabs)** | Same as file import, but reads from clipboard | Same validation, preview, and column mapping — data source is clipboard instead of a file |
 
 **Recommendations:**
 1. **Export first, import second.** Always run the corresponding export (e.g., Get Product Info) before importing so you have a baseline to compare against
