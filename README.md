@@ -11,33 +11,31 @@ Extended Autodesk Fabrication API Sample plugin for CADmep / ESTmep / CAMduct (F
 
 This project builds on the original Autodesk Fabrication API Sample (shipped with the Fabrication SDK), updated for modern Fabrication versions and extended with production features for cross-configuration content management, data export/import, and profile management.
 
-| Contributor | Role | GitHub |
-|-------------|------|--------|
-| **Autodesk** | Original author of the Fabrication API Sample application with WPF UI, database editor tabs, and AutoCAD plugin framework. Shipped as part of the Fabrication SDK. | - |
+| Contributor                 | Role                                                                                                                                                                                                       | GitHub                                               |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| **Autodesk**          | Original author of the Fabrication API Sample application with WPF UI, database editor tabs, and AutoCAD plugin framework. Shipped as part of the Fabrication SDK.                                         | -                                                    |
 | **Martin Magallanes** | Updated the sample for post-2020 versions of AutoCAD, CADmep, and the Fabrication Suite. Original author of the NETLOAD export commands and DiscordCADmep. Made the project publicly accessible on GitHub. | [MartinMagallanes](https://github.com/MartinMagallanes) |
-| **Tyler Phillips** | Extended the application with NETLOAD export/import commands, Content Transfer (cross-config ITM export/import with reference re-resolution), Profile Data Copy, CSV import services, and UI enhancements. | [Ty9112](https://github.com/Ty9112) |
+| **Tyler Phillips**    | Extended the application with NETLOAD export/import commands, Content Transfer (cross-config ITM export/import with reference re-resolution), Profile Data Copy, CSV import services, and UI enhancements. | [Ty9112](https://github.com/Ty9112)                     |
 
 ### Referenced Repositories
 
-| Repository | Author | Description |
-|------------|--------|-------------|
-| [FabricationSample](https://github.com/MartinMagallanes/FabricationSample) | Martin Magallanes | Fabrication API sample updated for post-2020 Fabrication versions (upstream) |
-| [DiscordCADmep](https://github.com/MartinMagallanes/DiscordCADmep) | Martin Magallanes | Simpler AutoCAD Fabrication plugin with NETLOAD export commands |
-| [fabrication-api-xmldocs](https://github.com/DugganIS/fabrication-api-xmldocs) | DugganIS | XML documentation extracted from FabricationAPI.chm for IntelliSense support. Created by DugganIS — they did the hard work of extracting and structuring the XML docs from Autodesk's .CHM help file so developers can get IntelliSense in Visual Studio. |
+| Repository                                                                  | Author            | Description                                                                                                                                                                                                                                                |
+| --------------------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [FabricationSample](https://github.com/MartinMagallanes/FabricationSample)     | Martin Magallanes | Fabrication API sample updated for post-2020 Fabrication versions (upstream)                                                                                                                                                                               |
+| [DiscordCADmep](https://github.com/MartinMagallanes/DiscordCADmep)             | Martin Magallanes | Simpler AutoCAD Fabrication plugin with NETLOAD export commands                                                                                                                                                                                            |
+| [fabrication-api-xmldocs](https://github.com/DugganIS/fabrication-api-xmldocs) | DugganIS          | XML documentation extracted from FabricationAPI.chm for IntelliSense support. Created by DugganIS — they did the hard work of extracting and structuring the XML docs from Autodesk's .CHM help file so developers can get IntelliSense in Visual Studio. |
 
 ---
-
 
 **Application:** Fabrication Sample (Extended)
 **Fabrication Products:** ESTmep, CAMduct, CADmep
 **Fabrication Version:** 2024
 **Programming Language:** C#
 **Type:** ExternalApplication
-<br/>**Subject:** Extended Fabrication API sample with content transfer, profile management, and data export/import.
+`<br/>`**Subject:** Extended Fabrication API sample with content transfer, profile management, and data export/import.
 **Summary:** Builds on the original Autodesk Fabrication API Sample with cross-configuration content transfer (ITM export/import with reference re-resolution), profile data copy with selective cleanup and multi-profile push, and CSV import/export services.
 
 See the [Installation](#installation) section for setup instructions.
-
 
 ---
 
@@ -132,16 +130,16 @@ These commands are available after loading the DLL via `NETLOAD` or the AutoCAD 
 
 ### Export Commands
 
-| Command | Description |
-|---------|-------------|
-| `FabAPI` | Opens the main FabAPI WPF window with all tabs and features |
-| `GetProductInfo` | Exports product database entries with prices and labor rate values to CSV |
-| `ExportItemData` | Exports service items with product list entries and dimensions to CSV |
-| `GetPriceTables` | Exports price lists and breakpoint table data to CSV |
-| `GetInstallationTimes` | Exports installation times tables with breakpoint values to CSV |
-| `GetItemLabor` | Exports items with calculated labor values derived from breakpoint tables |
-| `GetItemInstallationTables` | Exports items with their assigned installation times tables |
-| `GetServiceTemplateData` | Exports service template data (prompts with a service selection dialog) |
+| Command                       | Description                                                               |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| `FabAPI`                    | Opens the main FabAPI WPF window with all tabs and features               |
+| `GetProductInfo`            | Exports product database entries with prices and labor rate values to CSV |
+| `ExportItemData`            | Exports service items with product list entries and dimensions to CSV     |
+| `GetPriceTables`            | Exports price lists and breakpoint table data to CSV                      |
+| `GetInstallationTimes`      | Exports installation times tables with breakpoint values to CSV           |
+| `GetItemLabor`              | Exports items with calculated labor values derived from breakpoint tables |
+| `GetItemInstallationTables` | Exports items with their assigned installation times tables               |
+| `GetServiceTemplateData`    | Exports service template data (prompts with a service selection dialog)   |
 
 ![Product Database tab with export and import buttons](Examples/Screenshots/ProductDatabase.png)
 *The Product Database tab displays all product entries with their properties. Export and import buttons at the bottom allow CSV data transfer.*
@@ -154,10 +152,10 @@ These commands are available after loading the DLL via `NETLOAD` or the AutoCAD 
 
 ### Import Commands
 
-| Command | Description |
-|---------|-------------|
-| `ImportProductList` | Imports product list rows from a CSV file with column mapping |
-| `ImportPriceList` | Imports price list data from a CSV file |
+| Command               | Description                                                              |
+| --------------------- | ------------------------------------------------------------------------ |
+| `ImportProductList` | Imports product list rows from a CSV file with column mapping            |
+| `ImportPriceList`   | Imports price list data from a CSV file                                  |
 | `ImportProfileData` | Imports profile database files (.MAP files) from a source profile folder |
 
 ---
@@ -177,6 +175,7 @@ If you're new to this plugin, the **Commands tab is the best place to start**. I
 #### Why Start Here
 
 The Commands tab consolidates every export and import operation into one place with:
+
 - **Checkboxes** to select which commands to run
 - **Quick-select buttons** (Select All, Select None, Exports Only, Imports Only)
 - **Descriptions** for each command so you know what you're getting
@@ -187,29 +186,30 @@ This is the safest way to explore the Fabrication database. Every export is **re
 
 #### Available Export Commands
 
-| Command | Description |
-|---------|-------------|
-| Get Product Info | Full product export with prices, labor, supplier IDs |
-| Export Item Data | Service items with product list entries and conditions |
-| Get Price Tables | Price lists and breakpoint tables (multi-file, prompts for table selection) |
-| Get Installation Times | Installation times tables (multi-file, prompts for table selection) |
-| Get Item Labor | Items with calculated labor from breakpoint tables |
-| Get Item Installation Tables | Items with assigned installation table mappings |
-| Get Service Template Data | Service template buttons, codes, and item paths (prompts for service selection) |
+| Command                      | Description                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------- |
+| Get Product Info             | Full product export with prices, labor, supplier IDs                            |
+| Export Item Data             | Service items with product list entries and conditions                          |
+| Get Price Tables             | Price lists and breakpoint tables (multi-file, prompts for table selection)     |
+| Get Installation Times       | Installation times tables (multi-file, prompts for table selection)             |
+| Get Item Labor               | Items with calculated labor from breakpoint tables                              |
+| Get Item Installation Tables | Items with assigned installation table mappings                                 |
+| Get Service Template Data    | Service template buttons, codes, and item paths (prompts for service selection) |
 
 #### Available Import Commands
 
-| Command | Description | Notes |
-|---------|-------------|-------|
-| Import Installation Times | Installation times from CSV | Active |
-| Import Product Database | Product definitions and supplier IDs | Active |
-| Import Supplier Discounts | Discount codes from CSV | Active |
-| Import Button Report | Service template button codes | Active |
-| Import Price List | Price data into a selected price list | Disabled — requires price list selection on Price Lists tab |
+| Command                   | Description                           | Notes                                                        |
+| ------------------------- | ------------------------------------- | ------------------------------------------------------------ |
+| Import Installation Times | Installation times from CSV           | Active                                                       |
+| Import Product Database   | Product definitions and supplier IDs  | Active                                                       |
+| Import Supplier Discounts | Discount codes from CSV               | Active                                                       |
+| Import Button Report      | Service template button codes         | Active                                                       |
+| Import Price List         | Price data into a selected price list | Disabled — requires price list selection on Price Lists tab |
 
 #### Export Preview
 
 When you run an export command from the Commands tab, the data is first exported to a temporary file and displayed in a **scrollable preview window** with a DataGrid. You can:
+
 - Scroll through all rows and columns to verify the data
 - Resize the preview window by dragging edges or corners
 - Click **Save As...** to choose where to save the file
@@ -266,6 +266,7 @@ Imports price list data from a CSV file.
 Every tab with an import button also has a **Paste Import** button. This replicates the traditional ESTmep workflow where you copy tabular data from a spreadsheet or ESTmep's grid and paste it directly into the import pipeline.
 
 **How to use:**
+
 1. Copy data from ESTmep, Excel, or any spreadsheet (rows and columns)
 2. Click **Paste Import** on the relevant tab (Price Lists, Product Database, Installation Times, Supplier Discounts, Item Statuses, Job Statuses, Services, or Service Templates)
 3. The Column Mapping window opens with the pasted data
@@ -274,6 +275,7 @@ Every tab with an import button also has a **Paste Import** button. This replica
 **Delimiter detection:** Tab-separated data (from ESTmep/Excel) and comma-separated data are both auto-detected. The delimiter with more occurrences in the first row wins.
 
 **Available on all import tabs:**
+
 - Price Lists, Product Database, Supplier Discounts
 - Installation Times, Item Statuses, Job Statuses
 - Services (Button Report), Service Templates (Button Report)
@@ -298,23 +300,23 @@ The Services tab now includes a **Service Conditions** section that mirrors the 
 
 > **Note:** Edits made here modify the linked Service Template and will affect all services that share that template.
 
-| Action | How |
-|--------|-----|
-| **View conditions** | Automatically populated when a service is selected from the dropdown |
-| **Add a condition** | Click **Add Condition** — opens the standard condition dialog with Description, Greater Than, and Less Than or Equal To fields |
-| **Edit a condition** | Click a cell in the DataGrid and type — changes save on row commit |
-| **Delete a condition** | Right-click the row > **Delete Condition** |
-| **Fill down (Shift+D)** | Select multiple rows, press Shift+D to copy the top row's values to all selected rows below it |
+| Action                        | How                                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **View conditions**     | Automatically populated when a service is selected from the dropdown                                                                 |
+| **Add a condition**     | Click**Add Condition** — opens the standard condition dialog with Description, Greater Than, and Less Than or Equal To fields |
+| **Edit a condition**    | Click a cell in the DataGrid and type — changes save on row commit                                                                  |
+| **Delete a condition**  | Right-click the row >**Delete Condition**                                                                                      |
+| **Fill down (Shift+D)** | Select multiple rows, press Shift+D to copy the top row's values to all selected rows below it                                       |
 
 #### Bulk Assignment — Services
 
 The **Bulk Assignment** section at the bottom of the Services tab provides shortcuts for applying conditions and specifications to multiple service buttons at once.
 
-| Action | How |
-|--------|-----|
-| **Assign condition to selected buttons** | Pick a condition from the dropdown, select buttons in the Tabs & Buttons panel, click **Assign to Selected** |
-| **Create a new condition** | Click **New Condition** — creates a condition on the service's template and selects it in the dropdown |
-| **Apply specification to button items** | Pick a specification from the grouped dropdown, select buttons, click **Apply to Selected** — applies `ChangeSpecification()` to each item on each selected button |
+| Action                                         | How                                                                                                                                                                        |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Assign condition to selected buttons** | Pick a condition from the dropdown, select buttons in the Tabs & Buttons panel, click**Assign to Selected**                                                          |
+| **Create a new condition**               | Click**New Condition** — creates a condition on the service's template and selects it in the dropdown                                                               |
+| **Apply specification to button items**  | Pick a specification from the grouped dropdown, select buttons, click**Apply to Selected** — applies `ChangeSpecification()` to each item on each selected button |
 
 ---
 
@@ -326,13 +328,13 @@ The **Bulk Assignment** section at the bottom of the Services tab provides short
 
 The conditions DataGrid supports full inline editing:
 
-| Action | How |
-|--------|-----|
-| **Add a condition** | Click **Add Condition** |
-| **Copy conditions from another template** | Click **Copy Conditions From...** — select a source template |
-| **Edit Description / bounds** | Click a cell and type; `-1` or `Unrestricted` = no bound |
-| **Delete** | Right-click > **Delete Condition** |
-| **Fill down (Shift+D)** | Select rows, Shift+D copies top row to all selected |
+| Action                                          | How                                                                |
+| ----------------------------------------------- | ------------------------------------------------------------------ |
+| **Add a condition**                       | Click**Add Condition**                                       |
+| **Copy conditions from another template** | Click**Copy Conditions From...** — select a source template |
+| **Edit Description / bounds**             | Click a cell and type;`-1` or `Unrestricted` = no bound        |
+| **Delete**                                | Right-click >**Delete Condition**                            |
+| **Fill down (Shift+D)**                   | Select rows, Shift+D copies top row to all selected                |
 
 #### Bulk Assignment — Service Templates
 
@@ -364,11 +366,11 @@ The **Service Entries** and **Button Mappings** DataGrids now support multi-row 
 
 Right-clicking a tab header in the Tabs & Buttons panel reveals three additional context menu items:
 
-| Menu Item | Description |
-|-----------|-------------|
-| **Select All Buttons** | Selects all buttons in the current tab — useful before bulk operations |
-| **Copy Tab** | Captures all buttons and their button items (item path + condition) into a clipboard buffer |
-| **Paste Tab** | Pastes the clipboard buffer into the current tab, creating new buttons that match the copied set — conditions are matched by description in the target template |
+| Menu Item                    | Description                                                                                                                                                      |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Select All Buttons** | Selects all buttons in the current tab — useful before bulk operations                                                                                          |
+| **Copy Tab**           | Captures all buttons and their button items (item path + condition) into a clipboard buffer                                                                      |
+| **Paste Tab**          | Pastes the clipboard buffer into the current tab, creating new buttons that match the copied set — conditions are matched by description in the target template |
 
 Tab copy/paste works across services and templates. The clipboard buffer persists for the current session.
 
@@ -386,13 +388,13 @@ A **← Back** button in the folder toolbar tracks your navigation history. When
 
 A **Filter blanks:** ComboBox in the toolbar lets you narrow the grid to only items where a specific metadata column has no value assigned:
 
-| Filter Option | Shows rows where… |
-|---------------|-------------------|
-| Off | All rows (no filter) |
-| Specification | Specification is blank |
-| Price List | Price List is blank |
-| Install Times | Install Times is blank |
-| Fab Times | Fab Times is blank |
+| Filter Option    | Shows rows where…                |
+| ---------------- | --------------------------------- |
+| Off              | All rows (no filter)              |
+| Specification    | Specification is blank            |
+| Price List       | Price List is blank               |
+| Install Times    | Install Times is blank            |
+| Fab Times        | Fab Times is blank                |
 | Any Blank Column | Any of the above columns is blank |
 
 This is useful for quickly identifying items in a folder that haven't been fully configured. The filter applies on top of the existing grouping (works in both normal and "Show All Subfolders" modes).
@@ -401,15 +403,15 @@ This is useful for quickly identifying items in a folder that haven't been fully
 
 The folder contents grid now shows the following additional columns alongside Name and CID:
 
-| Column | Description |
-|--------|-------------|
-| Service | The service assigned to the item |
-| Material | The item's material |
-| Specification | The item's specification |
-| Price List | The item's assigned price list |
-| Install Times | The item's installation times table |
-| Fab Times | The item's fabrication times table |
-| Bought Out | Whether the item is flagged as bought out |
+| Column        | Description                               |
+| ------------- | ----------------------------------------- |
+| Service       | The service assigned to the item          |
+| Material      | The item's material                       |
+| Specification | The item's specification                  |
+| Price List    | The item's assigned price list            |
+| Install Times | The item's installation times table       |
+| Fab Times     | The item's fabrication times table        |
+| Bought Out    | Whether the item is flagged as bought out |
 
 These columns are populated when a folder is loaded and can be sorted. They give at-a-glance visibility into bulk assignment status across a folder's contents.
 
@@ -417,14 +419,14 @@ These columns are populated when a folder is loaded and can be sorted. They give
 
 The **Bulk Assignment** panel at the bottom of the Manage Content tab allows applying properties to multiple selected items at once. Check the items you want to update using the checkbox column (or use **Select All** / **Select None**), set the fields you want to change, and click **Apply to Selected**.
 
-| Field | Notes |
-|-------|-------|
-| Price List | Select from all price lists in the database |
-| Installation Times | Select from all installation times tables |
-| Fabrication Times | Select from all fabrication times tables |
-| Notes / Alias / Drawing Name | Text fields — only applied if non-empty |
-| Order / Zone / Equipment Tag / Pallet / Spool Name | Text fields — only applied if non-empty |
-| **Bought Out** | **New** — ComboBox with `— No Change —`, `Yes (Bought Out)`, `No (Not Bought Out)`. Only updates items when explicitly set to Yes or No. |
+| Field                                              | Notes                                                                                                                                                   |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Price List                                         | Select from all price lists in the database                                                                                                             |
+| Installation Times                                 | Select from all installation times tables                                                                                                               |
+| Fabrication Times                                  | Select from all fabrication times tables                                                                                                                |
+| Notes / Alias / Drawing Name                       | Text fields — only applied if non-empty                                                                                                                |
+| Order / Zone / Equipment Tag / Pallet / Spool Name | Text fields — only applied if non-empty                                                                                                                |
+| **Bought Out**                               | **New** — ComboBox with `— No Change —`, `Yes (Bought Out)`, `No (Not Bought Out)`. Only updates items when explicitly set to Yes or No. |
 
 All bulk updates load each item via the Fabrication API, apply the selected properties, and save. Fields left blank or set to "No Change" are skipped.
 
@@ -463,6 +465,7 @@ Copies database files (`.MAP` files) between Fabrication profiles (e.g., from Gl
 For enumerable data types, click the data type name (underlined link) to open a **preview window** showing all items from the source. Uncheck items you don't want in the target profile. After the `.MAP` file is copied, a cleanup file is saved that automatically deletes the unwanted items when the target profile is loaded.
 
 Supported data types for selective cleanup:
+
 - **Price & Labor:** Suppliers, Costs / Price Lists, Installation Times
 - **Primary:** Services, Fabrication Times, Materials, Specifications, Sections, Ancillaries
 - **Secondary:** Connectors, Dampers, Stiffeners
@@ -491,16 +494,19 @@ The comparison is useful before running a Profile Data Copy to understand exactl
 Many organizations store their Fabrication database on OneDrive, SharePoint-synced folders, or network shares. Profile Data Copy writes `.MAP` files directly to these locations, which introduces several potential issues:
 
 **OneDrive / SharePoint Sync:**
+
 - **File locking:** OneDrive may hold a sync lock on `.MAP` files while uploading. If Profile Copy tries to overwrite a file that OneDrive is actively syncing, the copy can fail with an access denied error. The backup will have already been created, but the target file may be in an inconsistent state.
 - **Sync delays:** After copying `.MAP` files, OneDrive may take seconds to minutes to sync the changes to other machines. If another user loads the profile on their machine before sync completes, they'll get the old data.
 - **Conflict files:** If two users perform Profile Copy operations targeting the same profile simultaneously, OneDrive may create conflict copies (e.g., `Cost-DESKTOP-ABC123.MAP`) instead of overwriting. These conflict files are ignored by Fabrication and will cause the operations to appear to have no effect.
 - **Cleanup file sync:** The `_pending_cleanup.json` file is written to the target profile's DATABASE folder. If OneDrive syncs this file to another machine before the original cleanup runs, the cleanup could run on the wrong machine or run twice.
 
 **Network shares (UNC paths):**
+
 - File locking on network shares can behave differently than local drives. If another user has the target profile loaded in ESTmep/CADmep (which holds `.MAP` files open), the copy will fail.
 - Network latency can cause partial writes if the connection drops during a large `.MAP` file copy.
 
 **Recommendations:**
+
 1. **Coordinate with your team** — only one person should perform Profile Copy operations at a time, and other users should close ESTmep/CADmep before the copy begins
 2. **Pause OneDrive sync** before performing Profile Copy if your database is on a OneDrive-synced path (right-click the OneDrive tray icon > Pause syncing)
 3. **Wait for sync to complete** before having other users load the updated profiles
@@ -538,6 +544,7 @@ Traditionally, fixing this requires manually re-setting product info, cost table
 5. Click **Export**
 
 **What gets exported:**
+
 - Each selected `.itm` file is copied to the output folder
 - Each companion `.png` thumbnail file is also copied (same name, different extension)
 - A `manifest.json` file is generated containing:
@@ -559,32 +566,32 @@ The manifest captures reference **names** (not indices), which enables name-base
 2. Click **Import Items**
 3. A folder browser opens — select the folder previously created by **Export Items** (the one containing `manifest.json`)
 4. The Import Items preview window opens showing:
+
    - Source folder path and configuration name
    - Number of items in the package
    - Per-item details with reference validation status:
      - **Green "(ok)"** — the reference exists in the target database by name
      - **Yellow "(!) not found"** — the reference does not exist in the target database
-
 5. **Reassigning Unmatched References:**
+
    - For any reference marked with a warning, a dropdown (ComboBox) appears next to it
    - The dropdown is populated with all available values from the **target** database
    - Select a replacement value, or leave it as "(skip - leave unresolved)" to import without fixing that reference
    - Available override types: Material, Specification, Section, Price List, Installation Times Table, Fabrication Times Table
    - Service is report-only (read-only on items and cannot be reassigned via the API)
-
 6. **Select Target Folder:**
+
    - Use the target folder dropdown to choose which item folder the imported items will be placed into
    - The dropdown shows all item folders in a flattened hierarchy (e.g., "HVAC > Pipe > Copper")
    - Alternatively, click **"..."** to browse to a custom folder path
-
 7. Check/uncheck items you want to import, then click **Import**
-
 8. **Duplicate Database ID Check:**
+
    - Before importing, the system scans existing `.itm` files in the target folder
    - If any items in the package have Database IDs that already exist in the target folder, a warning dialog appears listing the conflicts
    - You can choose to proceed anyway or cancel
-
 9. **Import Processing:**
+
    - Each selected `.itm` file is copied to the target folder
    - The companion `.png` file is also copied
    - Each item is loaded via the Fabrication API and references are re-resolved by name:
@@ -596,8 +603,8 @@ The manifest captures reference **names** (not indices), which enables name-base
      - Fabrication Times Table: matched by name
    - If the user selected override values, those are used instead of the original reference names
    - The item is saved to persist the re-resolved references
-
 10. **Results Dialog:**
+
     - Shows count of successfully imported items
     - Lists any warnings (unresolved references) and errors
     - The item folder tree automatically refreshes to show the newly imported items
@@ -689,11 +696,11 @@ Not all features carry the same risk. Here's a quick reference to help you decid
 
 These features **do not modify the Fabrication database**. They only read data and export it to files. You can run these freely without any risk to your configuration.
 
-| Feature | What It Does |
-|---------|-------------|
+| Feature                              | What It Does                                                           |
+| ------------------------------------ | ---------------------------------------------------------------------- |
 | **Commands Tab > All Exports** | Exports data to CSV files. Preview before saving. No database changes. |
-| **NETLOAD Export Commands** | Same exports via command line. Read-only. |
-| **Application Tab** | Displays configuration info. No changes. |
+| **NETLOAD Export Commands**    | Same exports via command line. Read-only.                              |
+| **Application Tab**            | Displays configuration info. No changes.                               |
 
 **Recommendation:** Start with the Commands tab. Run all 7 exports to get a full snapshot of your database. Review the CSV previews to understand your data before attempting any imports or copies.
 
@@ -701,21 +708,22 @@ These features **do not modify the Fabrication database**. They only read data a
 
 These features **modify records in the Fabrication database** by updating or adding data. Changes are applied directly — there is no built-in undo.
 
-| Feature | Risk | Mitigation |
-|---------|------|-----------|
-| **Import Installation Times** | Updates existing installation rate records | Validate column mapping carefully; preview shows update vs. new counts before confirming |
-| **Import Product Database** | Updates product definitions and supplier IDs | Only modifies products matching by ID; preview shows exactly what changes |
-| **Import Supplier Discounts** | Updates discount codes | Limited scope — only affects discount values |
-| **Import Button Report** | Updates service template button codes | Only modifies matching buttons by service/tab/name |
-| **Import Price List** | Updates price list entries | Requires selecting the target price list first on the Price Lists tab |
-| **Paste Import (all tabs)** | Same as file import, but reads from clipboard | Same validation, preview, and column mapping — data source is clipboard instead of a file |
-| **Bulk Assignment — Manage Content** | Updates Price List, Install/Fab Times, text fields, and Bought Out on multiple .itm files | Only selected items are updated; unset fields are skipped; review selections before clicking Apply |
-| **Bulk Assign Condition (Services/Templates)** | Adds button items to service buttons | Select correct condition and buttons first; no preview before apply |
-| **Bulk Apply Specification (Services/Templates)** | Calls `ChangeSpecification()` on items linked to selected buttons | Modifies .itm files on disk; can affect items used across multiple services |
-| **Add/Edit/Delete Service Conditions** | Modifies conditions on Service Templates | Since conditions are template-level, changes affect all services that share the template |
-| **Tab Copy/Paste** | Creates new service buttons by copying from another tab | Pastes to the current tab; confirm the target tab and template before pasting |
+| Feature                                                 | Risk                                                                                      | Mitigation                                                                                         |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Import Installation Times**                     | Updates existing installation rate records                                                | Validate column mapping carefully; preview shows update vs. new counts before confirming           |
+| **Import Product Database**                       | Updates product definitions and supplier IDs                                              | Only modifies products matching by ID; preview shows exactly what changes                          |
+| **Import Supplier Discounts**                     | Updates discount codes                                                                    | Limited scope — only affects discount values                                                      |
+| **Import Button Report**                          | Updates service template button codes                                                     | Only modifies matching buttons by service/tab/name                                                 |
+| **Import Price List**                             | Updates price list entries                                                                | Requires selecting the target price list first on the Price Lists tab                              |
+| **Paste Import (all tabs)**                       | Same as file import, but reads from clipboard                                             | Same validation, preview, and column mapping — data source is clipboard instead of a file         |
+| **Bulk Assignment — Manage Content**             | Updates Price List, Install/Fab Times, text fields, and Bought Out on multiple .itm files | Only selected items are updated; unset fields are skipped; review selections before clicking Apply |
+| **Bulk Assign Condition (Services/Templates)**    | Adds button items to service buttons                                                      | Select correct condition and buttons first; no preview before apply                                |
+| **Bulk Apply Specification (Services/Templates)** | Calls `ChangeSpecification()` on items linked to selected buttons                       | Modifies .itm files on disk; can affect items used across multiple services                        |
+| **Add/Edit/Delete Service Conditions**            | Modifies conditions on Service Templates                                                  | Since conditions are template-level, changes affect all services that share the template           |
+| **Tab Copy/Paste**                                | Creates new service buttons by copying from another tab                                   | Pastes to the current tab; confirm the target tab and template before pasting                      |
 
 **Recommendations:**
+
 1. **Export first, import second.** Always run the corresponding export (e.g., Get Product Info) before importing so you have a baseline to compare against
 2. **Review the preview carefully.** The column mapping window and import preview show you exactly what will change. If the counts look wrong, cancel and check your CSV
 3. **Test on a non-production profile first.** Copy your profile, import into the copy, verify the results, then repeat on the real profile
@@ -725,15 +733,16 @@ These features **modify records in the Fabrication database** by updating or add
 
 These features **copy or overwrite database files (.MAP files) and item files (.ITM files)**. They operate at the file level, which means mistakes can affect the entire profile or configuration. All features in this tier are considered experimental and should be tested in a non-production environment first.
 
-| Feature | Risk | Mitigation |
-|---------|------|-----------|
-| **Profile Data Copy (Experimental)** | Overwrites target profile's .MAP files | Automatic backup created before copy; can restore from Profiles tab |
-| **Push to Profiles (Experimental)** | Overwrites .MAP files across multiple profiles at once | Same backup protection, but applied to many profiles simultaneously — a mistake affects all targets |
-| **Content Transfer Export** | Copies .ITM files out — **read-only**, safe | No risk to source configuration |
+| Feature                                          | Risk                                                     | Mitigation                                                                                                                                |
+| ------------------------------------------------ | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Profile Data Copy (Experimental)**       | Overwrites target profile's .MAP files                   | Automatic backup created before copy; can restore from Profiles tab                                                                       |
+| **Push to Profiles (Experimental)**        | Overwrites .MAP files across multiple profiles at once   | Same backup protection, but applied to many profiles simultaneously — a mistake affects all targets                                      |
+| **Content Transfer Export**                | Copies .ITM files out —**read-only**, safe        | No risk to source configuration                                                                                                           |
 | **Content Transfer Import (Experimental)** | Copies .ITM files in and re-resolves database references | Can create items with unresolved references if names don't match; duplicate DB ID warning exists but proceeding overwrites existing items |
-| **Item Swap (Experimental)** | Replaces items in a drawing | Has undo, but restored items may not return to original coordinates. Not broadly tested. See [Known Bugs](#known-bugs) |
+| **Item Swap (Experimental)**               | Replaces items in a drawing                              | Has undo, but restored items may not return to original coordinates. Not broadly tested. See[Known Bugs](#known-bugs)                        |
 
 **Recommendations:**
+
 1. **Always leave "Create backup" checked** when using Profile Data Copy. This is on by default — don't turn it off
 2. **Coordinate with your team.** Other users should close ESTmep/CADmep before you push to their profiles. See the [OneDrive section](#onedrive-and-network-storage-considerations) for additional concerns with shared storage
 3. **Start with a single profile** before using Push to Profiles. Copy to one named profile, load it, verify everything looks right, then push to the rest
@@ -746,33 +755,33 @@ These features **copy or overwrite database files (.MAP files) and item files (.
 
 The FabAPI window contains the following tabs:
 
-| Tab | Description |
-|-----|-------------|
-| Job Items | View and edit items in the current fabrication job |
-| Product Database | Browse the product database entries |
-| Price Lists | View and edit price lists and breakpoint tables |
-| Supplier Discounts | Manage supplier discount codes and values |
-| Fabrication Tables | View and edit fabrication times breakpoint tables |
-| Installation Tables | View and edit installation times breakpoint tables |
-| Job Custom Data | Manage job-level custom data fields |
-| Item Custom Data | Manage item-level custom data fields |
-| Item Statuses | Configure item status definitions |
-| Job Statuses | Configure job status definitions |
-| Service Types | View service type definitions |
-| Point Locate | Point location data for job items |
-| **Services** | **Browse services; edit Service Conditions; bulk assign conditions and specifications to buttons** |
-| **Service Templates** | **Edit template conditions inline; bulk assign conditions and specifications; copy/paste tabs between templates** |
-| Materials | Browse materials and their gauges |
-| Sections | Browse section definitions |
-| Ancillaries | Browse ancillary items and their details |
-| Job Information | View job properties and status history |
-| **Manage Content** | **Item folder tree with back navigation, blank column filter, extended metadata grid, and bulk property assignment** |
-| Specifications | Browse specification definitions |
-| **Commands** | **Centralized hub for all export/import operations with preview and progress** |
-| Application | View application paths, configuration info, What's New, and Resources |
-| **Profiles** | **Profile data copy between configurations, Compare Profiles diff tool, and backup/restore** |
-| **Relationships** | **Dependency tree viewer — Services → Templates → Tabs → Buttons (read-only)** |
-| **Data Health** | **Validation scan for configuration issues; exports warning report to CSV** |
+| Tab                         | Description                                                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Job Items                   | View and edit items in the current fabrication job                                                                         |
+| Product Database            | Browse the product database entries                                                                                        |
+| Price Lists                 | View and edit price lists and breakpoint tables                                                                            |
+| Supplier Discounts          | Manage supplier discount codes and values                                                                                  |
+| Fabrication Tables          | View and edit fabrication times breakpoint tables                                                                          |
+| Installation Tables         | View and edit installation times breakpoint tables                                                                         |
+| Job Custom Data             | Manage job-level custom data fields                                                                                        |
+| Item Custom Data            | Manage item-level custom data fields                                                                                       |
+| Item Statuses               | Configure item status definitions                                                                                          |
+| Job Statuses                | Configure job status definitions                                                                                           |
+| Service Types               | View service type definitions                                                                                              |
+| Point Locate                | Point location data for job items                                                                                          |
+| **Services**          | **Browse services; edit Service Conditions; bulk assign conditions and specifications to buttons**                   |
+| **Service Templates** | **Edit template conditions inline; bulk assign conditions and specifications; copy/paste tabs between templates**    |
+| Materials                   | Browse materials and their gauges                                                                                          |
+| Sections                    | Browse section definitions                                                                                                 |
+| Ancillaries                 | Browse ancillary items and their details                                                                                   |
+| Job Information             | View job properties and status history                                                                                     |
+| **Manage Content**    | **Item folder tree with back navigation, blank column filter, extended metadata grid, and bulk property assignment** |
+| Specifications              | Browse specification definitions                                                                                           |
+| **Commands**          | **Centralized hub for all export/import operations with preview and progress**                                       |
+| Application                 | View application paths, configuration info, What's New, and Resources                                                      |
+| **Profiles**          | **Profile data copy between configurations, Compare Profiles diff tool, and backup/restore**                         |
+| **Relationships**     | **Dependency tree viewer — Services → Templates → Tabs → Buttons (read-only)**                                   |
+| **Data Health**       | **Validation scan for configuration issues; exports warning report to CSV**                                          |
 
 ---
 
@@ -837,8 +846,6 @@ FabricationSample/
 
 Output: `bin\x64\Release\FabricationSample.dll`
 
-
-
 ---
 
 ## API Limitations
@@ -851,20 +858,20 @@ The following are confirmed limitations of the Fabrication API (`FabricationAPI.
 
 **What's missing:** The `ServiceTemplateCondition` class exposes only four members:
 
-| Property / Method | Type | Notes |
-|-------------------|------|-------|
-| `Description` | `string` | Readable and writable |
-| `GreaterThan` | `double` | Read-only; use `SetConditionValues()` to change |
+| Property / Method   | Type       | Notes                                             |
+| ------------------- | ---------- | ------------------------------------------------- |
+| `Description`     | `string` | Readable and writable                             |
+| `GreaterThan`     | `double` | Read-only; use `SetConditionValues()` to change |
 | `LessThanEqualTo` | `double` | Read-only; use `SetConditionValues()` to change |
-| `Id` | identifier | Read-only |
+| `Id`              | identifier | Read-only                                         |
 
 **Not exposed through the API:**
 
-| Field visible in CADmep UI | Notes |
-|----------------------------|-------|
+| Field visible in CADmep UI                 | Notes                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Supports (Support Specification)** | The "Supports" column in the Fabrication database conditions grid links a condition to a hanger/support specification. This relationship is stored internally but is not accessible via `ServiceTemplateCondition` — no `SupportSpecification`, `Supports`, or `SupportPosition` property exists on the class in 2024 or 2025 API versions. |
-| **Support Positions** | Position-level support assignment per condition is likewise not surfaced. |
-| **Condition type / category** | There is no way to distinguish condition "types" — all conditions appear as Description + bounds only. |
+| **Support Positions**                | Position-level support assignment per condition is likewise not surfaced.                                                                                                                                                                                                                                                                            |
+| **Condition type / category**        | There is no way to distinguish condition "types" — all conditions appear as Description + bounds only.                                                                                                                                                                                                                                              |
 
 **Impact:** The Service Conditions and Service Template Conditions grids in this plugin show only Description, Greater Than, and Less Than or Equal To. The Supports column cannot be displayed or edited through the API.
 
@@ -875,6 +882,7 @@ The following are confirmed limitations of the Fabrication API (`FabricationAPI.
 **What's missing:** The `Service` class does not expose a `ServiceType` property. In the Fabrication database UI, services are categorized by type (e.g., Ductwork, Pipework, Supports). This is stored internally but not surfaced on the `Service` API object.
 
 **Also not exposed:**
+
 - No way to read or set the service **Group** assignment (only `Name` and `ServiceTemplate` are accessible for identification)
 - `Item.Service` is **read-only** — you cannot reassign an item's service via the API. The service is determined when the item is placed and cannot be changed programmatically.
 
@@ -885,6 +893,7 @@ The following are confirmed limitations of the Fabrication API (`FabricationAPI.
 The `ContentManager.LoadItem()` method and several `Item` property accessors trigger native (unmanaged) Fabrication code. When called from inside WPF event handlers (e.g., `SelectionChanged`, `MouseLeftButtonDown`), they can crash the host application (ESTmep / AutoCAD) with an unhandled native exception that bypasses managed `catch` blocks.
 
 **Confirmed unsafe to call from WPF event handlers:**
+
 - `ContentManager.LoadItem(path)`
 - `Item.IsProductList`
 - `Item.ProductList?.Rows`
@@ -899,6 +908,7 @@ The `ContentManager.LoadItem()` method and several `Item` property accessors tri
 ### Item Folder Management
 
 The `ItemFolder` class is read-only for structural operations. There is no API to:
+
 - Create a new item folder
 - Delete an item folder
 - Rename an item folder
@@ -911,6 +921,7 @@ All folder structure management must be done through the Fabrication content man
 ### Database Reference Indices
 
 Internally, Fabrication stores all database references (material, specification, price list, etc.) in `.itm` files by **integer index**, not by name. The public API resolves indices to named objects when you read properties like `Item.Material` or `Item.Specification`, but it does not expose:
+
 - The raw index values
 - A way to enumerate all items by index offset
 - A way to detect index mismatches after copying `.itm` files between configurations
@@ -922,6 +933,7 @@ This is why the Content Transfer feature (cross-config ITM export/import) uses t
 ### No Native Undo for Database Writes
 
 The Fabrication API provides no transaction or undo mechanism for database modifications. Operations such as:
+
 - `ContentManager.SaveItem()`
 - `ServiceTemplate.AddServiceTemplateCondition()`
 - `ServiceTemplate.DeleteServiceTemplateCondition()`
@@ -935,6 +947,7 @@ The Fabrication API provides no transaction or undo mechanism for database modif
 ### Product List Access Limitations
 
 `Item.ProductList` (when `Item.IsProductList` is `true`) provides access to product list rows, but with constraints:
+
 - Rows are **read-only** — individual `ItemProductListDataRow` properties cannot be written back via the API
 - The product list structure itself cannot be modified programmatically (no add/remove row)
 - Dimension values (`ItemProductListDimensionEntry.Value`) can only be read, not set
@@ -958,9 +971,7 @@ Bulk edits to product lists must be done through the Fabrication Product Informa
 When swapping an item and then undoing the swap, the restored item may not be placed back at its original coordinates. This occurs because:
 
 1. **Designline-connected items** (nodes and fittings) are constrained by their connections to adjacent items on the designline. The Fabrication API does not provide a way to reinsert an item at a specific position along a designline, so the restored item may appear at a default location instead of its original position.
-
 2. **Connector-based repositioning limitations.** The swap undo uses the primary connector endpoint (connector index 0) to calculate a move offset. If the replacement item has different connector geometry or a different connector count than the original, the offset calculation may not align correctly.
-
 3. **AutoCAD MOVE command timing.** The repositioning uses `SendStringToExecute` to issue an AutoCAD `_.MOVE` command asynchronously. If AutoCAD is busy processing other commands or the document context changes between the add and move operations, the move may silently fail. The fallback method (direct `TransformBy` via transaction) can also fail for Fabrication items that have internal position constraints.
 
 **Workaround:** After undoing a swap, manually move the restored item to the correct position. For items on designlines, you may need to delete and re-add the item at the correct location along the run.
