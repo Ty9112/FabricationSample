@@ -54,16 +54,36 @@ The following features have been added to the base Fabrication Sample applicatio
   - [CSV Export/Import (Product List, Price List)](#csv-import)
     - [Paste Import (Clipboard)](#paste-import-clipboard)
     - [Column Mapping Window Enhancements](#column-mapping-window-enhancements)
+  - [Services Tab Enhancements](#services-tab-enhancements)
+    - [Service Conditions](#service-conditions)
+    - [Bulk Assignment — Services](#bulk-assignment--services)
+  - [Service Templates Tab Enhancements](#service-templates-tab-enhancements)
+    - [Service Template Conditions](#service-template-conditions)
+    - [Bulk Assignment — Service Templates](#bulk-assignment--service-templates)
+  - [Service Editor Enhancements](#service-editor-enhancements)
+    - [Multi-Select in Entries and Button Mappings](#multi-select-in-entries-and-button-mappings)
+    - [Tab Copy/Paste](#tab-copypaste)
+  - [Manage Content Enhancements](#manage-content-enhancements)
+    - [Folder Navigation and Back Button](#folder-navigation-and-back-button)
+    - [Filter for Blank Columns](#filter-for-blank-columns)
+    - [Extended Folder Contents Grid](#extended-folder-contents-grid)
+    - [Bulk Assignment — Content Items](#bulk-assignment--content-items)
   - [Profile Data Copy (Experimental)](#profile-data-copy-experimental)
     - [Selective Cleanup](#selective-cleanup)
     - [Push to Profiles (Global Only)](#push-to-profiles-global-only)
+    - [Compare Profiles](#compare-profiles)
     - [OneDrive and Network Storage Considerations](#onedrive-and-network-storage-considerations)
   - [Content Transfer (Experimental)](#content-transfer-experimental)
   - [Item Swap with Undo (Experimental)](#item-swap-with-undo-experimental)
+  - [Application Tab](#application-tab)
+  - [Relationship Viewer](#relationship-viewer)
+  - [Data Health](#data-health)
+  - [Export for Revit / BI](#export-for-revit--bi)
 - [Feature Risk Guide](#feature-risk-guide)
 - [Tabs Reference](#tabs-reference)
 - [Project Structure](#project-structure)
 - [Building from Source](#building-from-source)
+- [API Limitations](#api-limitations)
 - [Known Bugs](#known-bugs)
 
 ---
@@ -129,8 +149,8 @@ These commands are available after loading the DLL via `NETLOAD` or the AutoCAD 
 ![Services tab with service selection dialog for export](Examples/Screenshots/Services.png)
 *The Services tab with the service selection dialog. Select which services to include when exporting service data or button reports.*
 
-![Service Templates tab with template selection and button report export](Examples/Screenshots/ServiceTemplates.png)
-*The Service Templates tab showing template conditions and button items. Export Button Report and Import Button Report are available for CSV-based template data management.*
+![Service Templates tab with Compose Template button and Template Composer window](Examples/Screenshots/ComposeServiceTemplate1.png)
+*The Service Templates tab showing template conditions and button items. The Compose Template button opens the Template Composer for building tab/button structures. Export Button Report and Import Button Report are available for CSV-based template data management.*
 
 ### Import Commands
 
@@ -268,6 +288,151 @@ The Column Mapping window (used by both file import and paste import) has been e
 
 ---
 
+### Services Tab Enhancements
+
+**Location:** FabAPI Window > **Services** tab (bottom panel)
+
+#### Service Conditions
+
+The Services tab now includes a **Service Conditions** section that mirrors the layout of Service Template Conditions. Because conditions are defined at the template level (not the service level), this section displays and edits conditions on the service's linked Service Template directly — making it possible to manage conditions without switching tabs.
+
+> **Note:** Edits made here modify the linked Service Template and will affect all services that share that template.
+
+| Action | How |
+|--------|-----|
+| **View conditions** | Automatically populated when a service is selected from the dropdown |
+| **Add a condition** | Click **Add Condition** — opens the standard condition dialog with Description, Greater Than, and Less Than or Equal To fields |
+| **Edit a condition** | Click a cell in the DataGrid and type — changes save on row commit |
+| **Delete a condition** | Right-click the row > **Delete Condition** |
+| **Fill down (Shift+D)** | Select multiple rows, press Shift+D to copy the top row's values to all selected rows below it |
+
+#### Bulk Assignment — Services
+
+The **Bulk Assignment** section at the bottom of the Services tab provides shortcuts for applying conditions and specifications to multiple service buttons at once.
+
+| Action | How |
+|--------|-----|
+| **Assign condition to selected buttons** | Pick a condition from the dropdown, select buttons in the Tabs & Buttons panel, click **Assign to Selected** |
+| **Create a new condition** | Click **New Condition** — creates a condition on the service's template and selects it in the dropdown |
+| **Apply specification to button items** | Pick a specification from the grouped dropdown, select buttons, click **Apply to Selected** — applies `ChangeSpecification()` to each item on each selected button |
+
+---
+
+### Service Templates Tab Enhancements
+
+**Location:** FabAPI Window > **Service Templates** tab (bottom panel)
+
+#### Service Template Conditions
+
+The conditions DataGrid supports full inline editing:
+
+| Action | How |
+|--------|-----|
+| **Add a condition** | Click **Add Condition** |
+| **Copy conditions from another template** | Click **Copy Conditions From...** — select a source template |
+| **Edit Description / bounds** | Click a cell and type; `-1` or `Unrestricted` = no bound |
+| **Delete** | Right-click > **Delete Condition** |
+| **Fill down (Shift+D)** | Select rows, Shift+D copies top row to all selected |
+
+#### Bulk Assignment — Service Templates
+
+Same pattern as the Services tab: assign conditions and specifications to selected buttons on the current template.
+
+#### Template Composer
+
+The **Compose Template** button opens the Template Composer window, which lets you build or rebuild service template tabs and buttons programmatically from a structured definition. Select an existing template as the source structure, choose which tabs and buttons to compose, and the system creates the full tab/button/item tree in the target template.
+
+![Service Templates tab with Compose Template button and Template Composer window](Examples/Screenshots/ComposeServiceTemplate1.png)
+*The Service Templates tab with the Compose Template button highlighted (top). The Template Composer window (left) shows a tree of templates and their tabs/buttons for selection.*
+
+After composing, a results report shows each operation (Template, Condition, Tab, Button, Button Item) with its name and status (OK or FAILED), allowing you to verify what was created and identify any items that could not be composed.
+
+![Compose Service Template results window showing operation status](Examples/Screenshots/ComposeServiceTemplate2.png)
+*The Compose Service Template results window listing each operation with its type, name, status, and details. FAILED rows indicate items that could not be created (e.g., missing references).*
+
+---
+
+### Service Editor Enhancements
+
+**Location:** FabAPI Window > **Services** or **Service Templates** tab > select a service/template > click the service button in Tabs & Buttons
+
+#### Multi-Select in Entries and Button Mappings
+
+The **Service Entries** and **Button Mappings** DataGrids now support multi-row selection (`SelectionMode="Extended"`). Hold Ctrl or Shift to select multiple rows for reference or bulk operations.
+
+#### Tab Copy/Paste
+
+Right-clicking a tab header in the Tabs & Buttons panel reveals three additional context menu items:
+
+| Menu Item | Description |
+|-----------|-------------|
+| **Select All Buttons** | Selects all buttons in the current tab — useful before bulk operations |
+| **Copy Tab** | Captures all buttons and their button items (item path + condition) into a clipboard buffer |
+| **Paste Tab** | Pastes the clipboard buffer into the current tab, creating new buttons that match the copied set — conditions are matched by description in the target template |
+
+Tab copy/paste works across services and templates. The clipboard buffer persists for the current session.
+
+---
+
+### Manage Content Enhancements
+
+**Location:** FabAPI Window > **Manage Content** tab > navigate to any item folder
+
+#### Folder Navigation and Back Button
+
+A **← Back** button in the folder toolbar tracks your navigation history. When you navigate into a subfolder (by double-clicking a folder row or expanding via the tree), the Back button enables. Click it to return to the previous folder. The history stack resets when you navigate via the tree.
+
+#### Filter for Blank Columns
+
+A **Filter blanks:** ComboBox in the toolbar lets you narrow the grid to only items where a specific metadata column has no value assigned:
+
+| Filter Option | Shows rows where… |
+|---------------|-------------------|
+| Off | All rows (no filter) |
+| Specification | Specification is blank |
+| Price List | Price List is blank |
+| Install Times | Install Times is blank |
+| Fab Times | Fab Times is blank |
+| Any Blank Column | Any of the above columns is blank |
+
+This is useful for quickly identifying items in a folder that haven't been fully configured. The filter applies on top of the existing grouping (works in both normal and "Show All Subfolders" modes).
+
+#### Extended Folder Contents Grid
+
+The folder contents grid now shows the following additional columns alongside Name and CID:
+
+| Column | Description |
+|--------|-------------|
+| Service | The service assigned to the item |
+| Material | The item's material |
+| Specification | The item's specification |
+| Price List | The item's assigned price list |
+| Install Times | The item's installation times table |
+| Fab Times | The item's fabrication times table |
+| Bought Out | Whether the item is flagged as bought out |
+
+These columns are populated when a folder is loaded and can be sorted. They give at-a-glance visibility into bulk assignment status across a folder's contents.
+
+#### Bulk Assignment — Content Items
+
+The **Bulk Assignment** panel at the bottom of the Manage Content tab allows applying properties to multiple selected items at once. Check the items you want to update using the checkbox column (or use **Select All** / **Select None**), set the fields you want to change, and click **Apply to Selected**.
+
+| Field | Notes |
+|-------|-------|
+| Price List | Select from all price lists in the database |
+| Installation Times | Select from all installation times tables |
+| Fabrication Times | Select from all fabrication times tables |
+| Notes / Alias / Drawing Name | Text fields — only applied if non-empty |
+| Order / Zone / Equipment Tag / Pallet / Spool Name | Text fields — only applied if non-empty |
+| **Bought Out** | **New** — ComboBox with `— No Change —`, `Yes (Bought Out)`, `No (Not Bought Out)`. Only updates items when explicitly set to Yes or No. |
+
+All bulk updates load each item via the Fabrication API, apply the selected properties, and save. Fields left blank or set to "No Change" are skipped.
+
+![Manage Content tab with folder contents grid and bulk assignment panel](Examples/Screenshots/ManageContent_BulkAssignment.png)
+*The Manage Content tab showing the folder contents grid with metadata columns (Service, Material, Specification, Price List, Install Times, Fab Times, Bought Out). The Show All Subfolders toggle is highlighted in the toolbar. The Bulk Assignment panel at the bottom allows batch updates to selected items.*
+
+---
+
 ### Profile Data Copy (Experimental)
 
 > **Note:** This feature is experimental. It overwrites .MAP files directly, so test on a non-critical profile with backups enabled before relying on it in production.
@@ -312,6 +477,15 @@ When on the Global profile, the **Push to Profiles** panel appears. This lets yo
 4. Each target receives the selected `.MAP` files, and if selective items were configured, a per-profile cleanup file (`_pending_cleanup.json`) is saved in each target's DATABASE folder
 5. When a target profile is loaded in a future session, the cleanup runs automatically and shows a summary of deleted items
 
+#### Compare Profiles
+
+The **Compare Profiles** button opens a comparison window that diffs two profiles side-by-side at the `.MAP` file level. It shows which files exist only in the left profile, only in the right, or in both, and highlights binary differences between shared files.
+
+![Profiles tab with Compare Profiles button and comparison window](Examples/Screenshots/CompareProfiles.png)
+*The Profiles tab with the Compare Profiles button highlighted (red box). The comparison window shows a DataGrid of all .MAP files with colored rows indicating Left Only, Right Only, Identical, or Different status.*
+
+The comparison is useful before running a Profile Data Copy to understand exactly which files will change and what is different between configurations.
+
 #### OneDrive and Network Storage Considerations
 
 Many organizations store their Fabrication database on OneDrive, SharePoint-synced folders, or network shares. Profile Data Copy writes `.MAP` files directly to these locations, which introduces several potential issues:
@@ -341,12 +515,6 @@ Many organizations store their Fabrication database on OneDrive, SharePoint-sync
 
 **Location:** FabAPI Window > **Manage Content** tab > **Export Items** / **Import Items** buttons
 
-![Export Items — select items from the folder tree and choose an output folder](Examples/Screenshots/ExportItems.png)
-*Export Items: Select .ITM files from the item folder tree (left), then choose an output folder (right). A manifest.json is generated with all database reference names.*
-
-![Import Items — reference validation with green (ok) and yellow (not found) indicators](Examples/Screenshots/ImportItems.png)
-*Import Items: Each item shows its database references with validation status. Green "(ok)" means the reference exists in the target configuration; yellow "(!) not found" means you need to assign a replacement from the dropdown.*
-
 This feature enables transferring `.itm` files (Fabrication item content) between different Fabrication configurations — for example, from a master/template configuration to a job-specific configuration.
 
 #### The Problem It Solves
@@ -356,6 +524,9 @@ When you copy an `.itm` file from one Fabrication configuration to another, the 
 Traditionally, fixing this requires manually re-setting product info, cost tables, and labor tables by hand using multiple tools (Product Information Editor, ESTmep, Ctrl+Shift+Right-Click bulk operations). Content Transfer automates this process.
 
 #### Export Items
+
+![Export Items — select items from the folder tree and choose an output folder](Examples/Screenshots/ExportItems.png)
+*Export Items: Select .ITM files from the item folder tree (left), then choose an output folder (right). A manifest.json is generated with all database reference names.*
 
 1. Open the FabAPI window and navigate to the **Manage Content** tab
 2. Click **Export Items**
@@ -380,6 +551,9 @@ Traditionally, fixing this requires manually re-setting product info, cost table
 The manifest captures reference **names** (not indices), which enables name-based re-resolution during import.
 
 #### Import Items
+
+![Import Items — reference validation with green (ok) and yellow (not found) indicators](Examples/Screenshots/ImportItems.png)
+*Import Items: Each item shows its database references with validation status. Green "(ok)" means the reference exists in the target configuration; yellow "(!) not found" means you need to assign a replacement from the dropdown.*
 
 1. Open the FabAPI window in the **target** configuration and navigate to the **Manage Content** tab
 2. Click **Import Items**
@@ -443,6 +617,70 @@ Swap items in the current job with different items from the database, with undo 
 
 ---
 
+### Relationship Viewer
+
+**Location:** FabAPI Window > **Relationships** tab
+
+The Relationships tab provides a dependency tree viewer for your Fabrication database relationships. It maps how Services link to Service Templates, which Templates contain Tabs, and which Tabs contain Buttons — giving a top-down structural view of your service configuration.
+
+![Relationships tab showing the Dependency Viewer tree for Services and Templates](Examples/Screenshots/RelationshipViewer.png)
+*The Relationships tab with the Dependency Viewer tree expanded. Services branch into service groups, each service links to its Template, and each Template shows its Tabs. The Build Tree button (highlighted) populates the tree from the current database.*
+
+#### How to Use
+
+1. Navigate to the **Relationships** tab
+2. Click **Build Tree** to load the full dependency graph from the current database
+3. Expand nodes to drill into services → template → tabs → buttons
+4. Use this view to identify which templates are shared across services, find templates with no services, or audit tab structure before using Tab Copy/Paste
+
+This is a **read-only** view — no changes are made when building or navigating the tree.
+
+---
+
+### Data Health
+
+**Location:** FabAPI Window > **Data Health** tab
+
+The Data Health tab runs a validation scan across your Fabrication database and content library, checking for common configuration issues such as missing references, unresolved specifications, empty required fields, and orphaned items.
+
+![Data Health tab with validation results and exported warning report](Examples/Screenshots/DataHealth.png)
+*The Data Health tab with the validation summary panel on the left showing categorized warnings. The right side shows an exported warning report opened in Excel/CSV format.*
+
+#### How to Use
+
+1. Navigate to the **Data Health** tab
+2. Click **Run Validation** to scan the current database
+3. Results are displayed in a categorized list with counts per issue type
+4. Click **Export Report** to save the full warning list to a CSV file for review or sharing
+
+This is a **read-only** scan — it reports issues but does not make any changes.
+
+---
+
+### Application Tab
+
+**Location:** FabAPI Window > **Application** tab
+
+The Application tab displays current Fabrication configuration details, a summary of features added in this fork, and a Resources section with links to documentation and the GitHub README.
+
+![Application tab showing configuration info, What's New, and Resources](Examples/Screenshots/Application.png)
+*The Application tab displaying the current Fabrication configuration path, a "Features Added in This Fork" summary, and a Resources section with links to the GitHub README and API documentation.*
+
+---
+
+### Export for Revit / BI
+
+**Location:** FabAPI Window > **Job Items** tab
+
+The **Export for Revit / BI** button exports the current job's fabrication items to an Excel-compatible format suitable for import into Revit schedules or business intelligence tools (Power BI, Excel pivot tables, etc.).
+
+![Job Items tab with Export for Revit / BI button and resulting Excel spreadsheet](Examples/Screenshots/ExportRevitBi.png)
+*The Job Items tab with the Export for Revit / BI button highlighted. The resulting Excel spreadsheet (left) shows item data in a structured format ready for Revit schedule import or BI consumption.*
+
+The export includes item dimensions, service information, material, specification, price list, and other properties needed to match Revit family parameters or BI data models.
+
+---
+
 ## Feature Risk Guide
 
 Not all features carry the same risk. Here's a quick reference to help you decide what's safe to try immediately and what deserves more caution.
@@ -459,9 +697,9 @@ These features **do not modify the Fabrication database**. They only read data a
 
 **Recommendation:** Start with the Commands tab. Run all 7 exports to get a full snapshot of your database. Review the CSV previews to understand your data before attempting any imports or copies.
 
-### Moderate Risk — Data Imports
+### Moderate Risk — Data Imports and Bulk Edits
 
-These features **modify records in the Fabrication database** by updating or adding data. Changes are applied directly — there is no built-in undo for imports (unlike Item Swap).
+These features **modify records in the Fabrication database** by updating or adding data. Changes are applied directly — there is no built-in undo.
 
 | Feature | Risk | Mitigation |
 |---------|------|-----------|
@@ -471,6 +709,11 @@ These features **modify records in the Fabrication database** by updating or add
 | **Import Button Report** | Updates service template button codes | Only modifies matching buttons by service/tab/name |
 | **Import Price List** | Updates price list entries | Requires selecting the target price list first on the Price Lists tab |
 | **Paste Import (all tabs)** | Same as file import, but reads from clipboard | Same validation, preview, and column mapping — data source is clipboard instead of a file |
+| **Bulk Assignment — Manage Content** | Updates Price List, Install/Fab Times, text fields, and Bought Out on multiple .itm files | Only selected items are updated; unset fields are skipped; review selections before clicking Apply |
+| **Bulk Assign Condition (Services/Templates)** | Adds button items to service buttons | Select correct condition and buttons first; no preview before apply |
+| **Bulk Apply Specification (Services/Templates)** | Calls `ChangeSpecification()` on items linked to selected buttons | Modifies .itm files on disk; can affect items used across multiple services |
+| **Add/Edit/Delete Service Conditions** | Modifies conditions on Service Templates | Since conditions are template-level, changes affect all services that share the template |
+| **Tab Copy/Paste** | Creates new service buttons by copying from another tab | Pastes to the current tab; confirm the target tab and template before pasting |
 
 **Recommendations:**
 1. **Export first, import second.** Always run the corresponding export (e.g., Get Product Info) before importing so you have a baseline to compare against
@@ -517,23 +760,19 @@ The FabAPI window contains the following tabs:
 | Job Statuses | Configure job status definitions |
 | Service Types | View service type definitions |
 | Point Locate | Point location data for job items |
-| Services | Browse and inspect services and their templates |
-| Service Templates | View and edit service template conditions |
+| **Services** | **Browse services; edit Service Conditions; bulk assign conditions and specifications to buttons** |
+| **Service Templates** | **Edit template conditions inline; bulk assign conditions and specifications; copy/paste tabs between templates** |
 | Materials | Browse materials and their gauges |
 | Sections | Browse section definitions |
 | Ancillaries | Browse ancillary items and their details |
 | Job Information | View job properties and status history |
-| **Manage Content** | **Item folder tree, Create/Load items, Export/Import items** |
+| **Manage Content** | **Item folder tree with back navigation, blank column filter, extended metadata grid, and bulk property assignment** |
 | Specifications | Browse specification definitions |
 | **Commands** | **Centralized hub for all export/import operations with preview and progress** |
 | Application | View application paths, configuration info, What's New, and Resources |
-| **Profiles** | **Profile data copy between configurations with backup/restore** |
-
-![Application tab showing configuration info, What's New, and Resources](Examples/Screenshots/Application.png)
-*The Application tab displays the current Fabrication configuration details, a "Features Added in This Fork" summary, and a Resources section with a link to the GitHub README.*
-
-![Service Properties view with export and import service entries](Examples/Screenshots/ServiceProperties.png)
-*The Service Properties view showing detailed service entry data with export and import capabilities for service-level data.*
+| **Profiles** | **Profile data copy between configurations, Compare Profiles diff tool, and backup/restore** |
+| **Relationships** | **Dependency tree viewer — Services → Templates → Tabs → Buttons (read-only)** |
+| **Data Health** | **Validation scan for configuration issues; exports warning report to CSV** |
 
 ---
 
@@ -599,6 +838,114 @@ FabricationSample/
 Output: `bin\x64\Release\FabricationSample.dll`
 
 
+
+---
+
+## API Limitations
+
+The following are confirmed limitations of the Fabrication API (`FabricationAPI.dll`, version 2024/2025) discovered while building this plugin. Features that appear in the Fabrication CADmep database UI but are not accessible through the public API are documented here so they are not re-investigated unnecessarily.
+
+---
+
+### Service Template Condition Properties
+
+**What's missing:** The `ServiceTemplateCondition` class exposes only four members:
+
+| Property / Method | Type | Notes |
+|-------------------|------|-------|
+| `Description` | `string` | Readable and writable |
+| `GreaterThan` | `double` | Read-only; use `SetConditionValues()` to change |
+| `LessThanEqualTo` | `double` | Read-only; use `SetConditionValues()` to change |
+| `Id` | identifier | Read-only |
+
+**Not exposed through the API:**
+
+| Field visible in CADmep UI | Notes |
+|----------------------------|-------|
+| **Supports (Support Specification)** | The "Supports" column in the Fabrication database conditions grid links a condition to a hanger/support specification. This relationship is stored internally but is not accessible via `ServiceTemplateCondition` — no `SupportSpecification`, `Supports`, or `SupportPosition` property exists on the class in 2024 or 2025 API versions. |
+| **Support Positions** | Position-level support assignment per condition is likewise not surfaced. |
+| **Condition type / category** | There is no way to distinguish condition "types" — all conditions appear as Description + bounds only. |
+
+**Impact:** The Service Conditions and Service Template Conditions grids in this plugin show only Description, Greater Than, and Less Than or Equal To. The Supports column cannot be displayed or edited through the API.
+
+---
+
+### Service Properties
+
+**What's missing:** The `Service` class does not expose a `ServiceType` property. In the Fabrication database UI, services are categorized by type (e.g., Ductwork, Pipework, Supports). This is stored internally but not surfaced on the `Service` API object.
+
+**Also not exposed:**
+- No way to read or set the service **Group** assignment (only `Name` and `ServiceTemplate` are accessible for identification)
+- `Item.Service` is **read-only** — you cannot reassign an item's service via the API. The service is determined when the item is placed and cannot be changed programmatically.
+
+---
+
+### Item Content API — Unsafe Contexts
+
+The `ContentManager.LoadItem()` method and several `Item` property accessors trigger native (unmanaged) Fabrication code. When called from inside WPF event handlers (e.g., `SelectionChanged`, `MouseLeftButtonDown`), they can crash the host application (ESTmep / AutoCAD) with an unhandled native exception that bypasses managed `catch` blocks.
+
+**Confirmed unsafe to call from WPF event handlers:**
+- `ContentManager.LoadItem(path)`
+- `Item.IsProductList`
+- `Item.ProductList?.Rows`
+- `ItemProductListDimensionEntry.Value`
+
+**Safe contexts:** Button click handlers, menu item click handlers, and code invoked from background threads with UI marshaling are all safe. Tree view selection handlers and DataGrid selection-changed handlers are not.
+
+**Impact on this plugin:** The Manage Content tab pre-loads item metadata during folder navigation (where `LoadItem` is called from a safe button-triggered context). The folder contents DataGrid `SelectionChanged` handler does not call any API methods — it only reads already-loaded data. The product list panel (showing Database IDs and dimensions) was originally implemented via `SelectionChanged` but removed because accessing `Item.ProductList.Rows` in that context crashed ESTmep.
+
+---
+
+### Item Folder Management
+
+The `ItemFolder` class is read-only for structural operations. There is no API to:
+- Create a new item folder
+- Delete an item folder
+- Rename an item folder
+- Move a folder to a different parent
+
+All folder structure management must be done through the Fabrication content management UI or via direct filesystem operations on the content library directory.
+
+---
+
+### Database Reference Indices
+
+Internally, Fabrication stores all database references (material, specification, price list, etc.) in `.itm` files by **integer index**, not by name. The public API resolves indices to named objects when you read properties like `Item.Material` or `Item.Specification`, but it does not expose:
+- The raw index values
+- A way to enumerate all items by index offset
+- A way to detect index mismatches after copying `.itm` files between configurations
+
+This is why the Content Transfer feature (cross-config ITM export/import) uses the exported reference names from `manifest.json` to re-resolve references by name on import — there is no API method to bulk-fix index references after a file copy.
+
+---
+
+### No Native Undo for Database Writes
+
+The Fabrication API provides no transaction or undo mechanism for database modifications. Operations such as:
+- `ContentManager.SaveItem()`
+- `ServiceTemplate.AddServiceTemplateCondition()`
+- `ServiceTemplate.DeleteServiceTemplateCondition()`
+- Price list and installation times edits
+- Service and material property changes
+
+...are all permanent and immediate. The only undo support in this plugin is the item swap undo manager, which is custom-built and session-scoped (it cannot undo database file changes made by Profile Data Copy or CSV imports).
+
+---
+
+### Product List Access Limitations
+
+`Item.ProductList` (when `Item.IsProductList` is `true`) provides access to product list rows, but with constraints:
+- Rows are **read-only** — individual `ItemProductListDataRow` properties cannot be written back via the API
+- The product list structure itself cannot be modified programmatically (no add/remove row)
+- Dimension values (`ItemProductListDimensionEntry.Value`) can only be read, not set
+
+Bulk edits to product lists must be done through the Fabrication Product Information editor or via the import services in this plugin.
+
+---
+
+### Application.CurrentProfile Behavior
+
+`Application.CurrentProfile` returns the string `"Global"` (not `null` or empty) when the Global profile is active. This is not documented in the API help file. Code that checks for "not on a named profile" must test for both `string.IsNullOrEmpty(profile)` **and** `profile == "Global"` — checking only for null/empty will incorrectly treat Global as a named profile.
 
 ---
 
