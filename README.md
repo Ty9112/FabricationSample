@@ -2,10 +2,10 @@
 
 Extended Autodesk Fabrication API Sample plugin for CADmep / ESTmep / CAMduct (Fabrication 2024).
 
-> **This is a fork of [MartinMagallanes/FabricationSample](https://github.com/MartinMagallanes/FabricationSample)** with significant feature additions for production use. See [Summary of Extended Features](#summary-of-extended-features) below.
-
 ![Commands tab with centralized export and import operations](Examples/Screenshots/Commands.png)
 *The Commands tab — the recommended starting point. All export and import operations in one place, with a scrollable CSV preview before saving.*
+
+> **This is a fork of [MartinMagallanes/FabricationSample](https://github.com/MartinMagallanes/FabricationSample)** with significant feature additions for production use. See [Summary of Extended Features](#summary-of-extended-features) below.
 
 ## Authors and Credits
 
