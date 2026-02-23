@@ -99,9 +99,34 @@ if (result.Status == ResultStatus.Succeeded)
     value = (double)result.ReturnObject;
 ```
 
+## Version Control & Release Policy
+
+**IMPORTANT — read before committing anything binary:**
+
+- `Compiled/FabricationSample.dll` is **gitignored** and must NEVER be committed or pushed to the public repo (`Ty9112/FabricationSample`)
+- All builds — including internal builds and any autodesk-mcp generated builds — stay local only
+- Source code changes commit normally to `master`; the compiled DLL does not
+
+### Publishing a Release
+
+Official DLL releases are distributed exclusively via **GitHub Releases**:
+
+```bash
+# 1. Tag the commit
+git tag v1.0.0
+git push origin v1.0.0
+
+# 2. On GitHub: Releases → New Release → select tag → attach FabricationSample.dll
+```
+
+### Release Reminder (for agents)
+
+After a significant batch of commits (roughly 10+ commits or major feature completion), prompt Tyler:
+> "We've made X commits since the last release. Want to publish a new GitHub Release and attach the latest DLL?"
+
 ## Current Branch
 
-`feature/item-swap-with-undo` - Adding item swap functionality with undo support
+`master` - main public branch
 
 ## Related Projects
 
