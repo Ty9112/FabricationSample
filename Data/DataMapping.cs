@@ -873,6 +873,7 @@ namespace FabricationSample.Data
 
         public ServiceTemplateCondition Condition { get; set; }
         public string Description { get; set; }
+        public int ConditionId { get; set; }
         public string LessThanOrEqual
         {
             get
@@ -930,12 +931,13 @@ namespace FabricationSample.Data
         // Declare the event 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public FabServiceTemplateCondition(ServiceTemplateCondition condition)
+        public FabServiceTemplateCondition(ServiceTemplateCondition condition, int index = -1)
         {
             Condition = condition;
             Description = condition.Description;
             _greaterThan = condition.GreaterThan;
             _lessThanOrEqual = condition.LessThanEqualTo;
+            ConditionId = index;
         }
 
         // Create the OnPropertyChanged method to raise the event 
@@ -1004,6 +1006,7 @@ namespace FabricationSample.Data
     {
         public string Name { get; set; }
         public string Group { get; set; }
+        public int Index { get; set; }
         public bool Exists { get; set; }
         public Specification Spec { get; set; }
 
@@ -1013,6 +1016,7 @@ namespace FabricationSample.Data
         {
             Name = "";
             Group = "";
+            Index = -1;
             Exists = false;
         }
 
@@ -1022,6 +1026,7 @@ namespace FabricationSample.Data
             Name = spec.Name;
             Group = spec.Group;
             Exists = true;
+            Index = -1;
         }
     }
 

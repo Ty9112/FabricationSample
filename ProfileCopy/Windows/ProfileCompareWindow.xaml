@@ -1,0 +1,115 @@
+<Window x:Class="FabricationSample.ProfileCopy.Windows.ProfileCompareWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Compare Profiles" Height="500" Width="1050"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/FabricationSample;component/Resources/Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Profile Selection -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <DockPanel Margin="0,0,0,5">
+                <TextBlock Text="Profile A (Left):" Width="110" VerticalAlignment="Center"/>
+                <ComboBox x:Name="cmbProfileLeft" DisplayMemberPath="Name"
+                          SelectionChanged="cmbProfile_SelectionChanged"/>
+            </DockPanel>
+            <DockPanel>
+                <TextBlock Text="Profile B (Right):" Width="110" VerticalAlignment="Center"/>
+                <ComboBox x:Name="cmbProfileRight" DisplayMemberPath="Name"
+                          SelectionChanged="cmbProfile_SelectionChanged"/>
+            </DockPanel>
+        </StackPanel>
+
+        <!-- Compare Button -->
+        <DockPanel Grid.Row="1" Margin="0,0,0,8">
+            <Button x:Name="btnCompare" Content="Compare" Width="100"
+                    Click="btnCompare_Click" DockPanel.Dock="Left"/>
+            <TextBlock x:Name="txtCompareStatus" FontSize="11" Foreground="#666666"
+                       VerticalAlignment="Center" Margin="10,0,0,0"/>
+        </DockPanel>
+
+        <!-- Results Grid -->
+        <DataGrid Grid.Row="2" x:Name="dgCompareResults"
+                  AutoGenerateColumns="False" IsReadOnly="False"
+                  CanUserSortColumns="True" VerticalAlignment="Stretch"
+                  HorizontalAlignment="Stretch" SelectionMode="Extended">
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="Apply" Width="45" Binding="{Binding IsApplySelected, UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="File" Width="110" Binding="{Binding FileName}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Data Type" Width="130" Binding="{Binding DataType}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Status" Width="90" Binding="{Binding StatusDisplay}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Left Lines" Width="70" Binding="{Binding LeftCount}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Right Lines" Width="70" Binding="{Binding RightCount}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Added" Width="55" Binding="{Binding AddedCount}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Removed" Width="55" Binding="{Binding RemovedCount}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Size Diff" Width="90" Binding="{Binding SizeDiff}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Left Modified" Width="110" Binding="{Binding LeftModifiedDisplay}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Right Modified" Width="110" Binding="{Binding RightModifiedDisplay}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Left Hash" Width="75" Binding="{Binding LeftHashShort}" IsReadOnly="True">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="FontFamily" Value="Consolas"/>
+                            <Setter Property="FontSize" Value="11"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Right Hash" Width="*" Binding="{Binding RightHashShort}" IsReadOnly="True">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="FontFamily" Value="Consolas"/>
+                            <Setter Property="FontSize" Value="11"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding StatusDisplay}" Value="Identical">
+                            <Setter Property="Foreground" Value="#888888"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding StatusDisplay}" Value="Modified">
+                            <Setter Property="Foreground" Value="#E65100"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding StatusDisplay}" Value="Only in Left">
+                            <Setter Property="Foreground" Value="#C62828"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding StatusDisplay}" Value="Only in Right">
+                            <Setter Property="Foreground" Value="#1565C0"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+        </DataGrid>
+
+        <!-- Actions & Summary -->
+        <StackPanel Grid.Row="3" Margin="0,8,0,0">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                <Button x:Name="btnSelectAllModified" Content="Select All Modified" Width="130"
+                        Click="btnSelectAllModified_Click" IsEnabled="False"/>
+                <Button x:Name="btnApplySelected" Content="Apply Selected (Left to Right)" Width="190"
+                        Margin="10,0,0,0" Click="btnApplySelected_Click" IsEnabled="False"
+                        ToolTip="Copy selected .MAP files from Profile A to Profile B"/>
+                <TextBlock x:Name="txtApplyStatus" FontSize="11" Foreground="#555555"
+                           VerticalAlignment="Center" Margin="10,0,0,0"/>
+                <Button x:Name="btnExportReport" Content="Export Report" Width="100"
+                        Margin="10,0,0,0" Click="btnExportReport_Click" IsEnabled="False"/>
+                <Button Content="Close" Width="80" Margin="20,0,0,0" Click="btnClose_Click"
+                        HorizontalAlignment="Right"/>
+            </StackPanel>
+            <TextBlock x:Name="txtCompareSummary" FontSize="11" Foreground="#555555"/>
+        </StackPanel>
+    </Grid>
+</Window>

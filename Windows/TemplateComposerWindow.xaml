@@ -1,0 +1,88 @@
+<Window x:Class="FabricationSample.Windows.TemplateComposerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Compose Service Template" Height="600" Width="650"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- New Template Name -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="New Template Name:" Width="130" VerticalAlignment="Center"/>
+            <TextBox x:Name="txtNewTemplateName" VerticalAlignment="Center"/>
+        </DockPanel>
+
+        <!-- Instructions -->
+        <TextBlock Grid.Row="1" x:Name="txtInstructions"
+                   Text="Select tabs from existing templates to include in the new template:"
+                   FontSize="11" Foreground="#666" Margin="0,0,0,5"/>
+
+        <!-- TreeView of Templates > Tabs (visible during selection) -->
+        <TreeView Grid.Row="2" x:Name="tvTemplateTabs" BorderThickness="1" BorderBrush="#CCC">
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Tabs}">
+                    <TextBlock Text="{Binding TemplateName}" FontWeight="SemiBold"/>
+                    <HierarchicalDataTemplate.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsSelected}"
+                                      Margin="2"/>
+                        </DataTemplate>
+                    </HierarchicalDataTemplate.ItemTemplate>
+                </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+
+        <!-- Compose Report DataGrid (hidden during selection, shown after compose) -->
+        <DataGrid Grid.Row="2" x:Name="dgReport"
+                  Visibility="Collapsed"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  BorderThickness="1" BorderBrush="#CCC"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  GridLinesVisibility="Horizontal"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Status}" Value="OK">
+                            <Setter Property="Background" Value="#E8F5E9"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Status}" Value="FAILED">
+                            <Setter Property="Background" Value="#FFEBEE"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Status}" Value="SKIPPED">
+                            <Setter Property="Background" Value="#FFF8E1"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Operation" Binding="{Binding Operation}" Width="90"/>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="70"/>
+                <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Status -->
+        <TextBlock Grid.Row="3" x:Name="txtStatus" FontSize="11" Foreground="#555"
+                   Margin="0,8,0,5" TextWrapping="Wrap"/>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="btnSelectAll" Content="Select All" Width="80" Click="btnSelectAll_Click" Margin="0,0,5,0"/>
+            <Button x:Name="btnSelectNone" Content="Select None" Width="80" Click="btnSelectNone_Click" Margin="0,0,15,0"/>
+            <Button x:Name="btnCompose" Content="Compose Template" Width="130"
+                    Click="btnCompose_Click" IsEnabled="True"/>
+            <Button x:Name="btnClose" Content="Cancel" Width="80" Click="btnCancel_Click" Margin="10,0,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -98,7 +98,6 @@ namespace FabricationSample.UserControls.DatabaseEditor
             _itemUpdateCount = 0;
 
             ObservableCollection<Item> lstUpdatedItems = new ObservableCollection<Item>();
-            //Update Items with Requires Update Flag set
             foreach (Item itm in Job.Items)
             {
                 SetUpdateItemProperties(itm);
@@ -113,7 +112,6 @@ namespace FabricationSample.UserControls.DatabaseEditor
             Autodesk.Fabrication.UI.UIApplication.UpdateView(lstUpdatedItems.ToList());
 
             MessageBox.Show(string.Format("{0} Item(s) Updated", _itemUpdateCount), "Items Updated", MessageBoxButton.OK, MessageBoxImage.Information);
-
         }
 
         private void btnSaveJob_Click(object sender, RoutedEventArgs e)
@@ -129,6 +127,44 @@ namespace FabricationSample.UserControls.DatabaseEditor
         private void btnSaveJobAs_Click(object sender, RoutedEventArgs e)
         {
             FabricationAPIExamples.SaveJobAs();
+        }
+
+        private void btnExportForRevit_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dlg = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = "Export Job Items for Revit/BI",
+                    Filter = "CSV Files (*.csv)|*.csv",
+                    FileName = $"RevitBridgeItems_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+                };
+
+                if (dlg.ShowDialog() != true) return;
+
+                var service = new FabricationSample.Services.Export.RevitBridgeExportService();
+                var options = new FabricationSample.Services.Export.ExportOptions { IncludeHeader = true };
+                var result = service.Export(dlg.FileName, options);
+
+                if (result.IsSuccess)
+                {
+                    if (MessageBox.Show($"Exported {result.RowCount} items to:\n{result.FilePath}\n\nOpen file?",
+                        "Export Complete", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+                    {
+                        System.Diagnostics.Process.Start(result.FilePath);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show($"Export failed: {result.ErrorMessage}", "Export Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Export Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         void SetUpdateItemProperties(Item itm)

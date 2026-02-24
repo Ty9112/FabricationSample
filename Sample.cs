@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using FabricationSample.Services.Bridge;
 
 [assembly: ExtensionApplication(typeof(FabricationSample.ACADSample))]
 
@@ -42,6 +43,7 @@ namespace FabricationSample
     {
         public static string AcadYear { get; private set; }
         FabricationWindow _win = null;
+        FabricationBridgeService _bridge = null;
 
         /// <summary>
         /// Check this before Dispatcher calls to avoid deadlocks during shutdown.
@@ -73,10 +75,17 @@ namespace FabricationSample
             catch { }
 
             Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument.Editor.WriteMessage("\nLoaded FabricationSample add-in!");
+
+            _bridge = new FabricationBridgeService();
+            _bridge.Start();
         }
 
         public void Terminate()
         {
+            // Stop the HTTP bridge before setting IsShuttingDown — the bridge
+            // checks IsShuttingDown to guard Dispatcher calls.
+            try { _bridge?.Stop(); _bridge = null; } catch { }
+
             // Set shutdown flag first — this prevents background threads from
             // calling Dispatcher.Invoke, which would deadlock and prevent the
             // AppDomain from unloading (CannotUnloadAppDomainException).

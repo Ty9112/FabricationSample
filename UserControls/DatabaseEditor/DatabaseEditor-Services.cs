@@ -50,6 +50,13 @@ namespace FabricationSample.UserControls.DatabaseEditor
             specs.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
             cmbServiceSpecification.ItemsSource = specs;
 
+            // Bulk spec combo uses same grouped view
+            var bulkSpecs = new ListCollectionView(new ObservableCollection<Specification>(Database.Specifications));
+            bulkSpecs.GroupDescriptions.Add(new PropertyGroupDescription("Group"));
+            bulkSpecs.SortDescriptions.Add(new SortDescription("Group", ListSortDirection.Ascending));
+            bulkSpecs.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
+            cmbBulkSpecSvc.ItemsSource = bulkSpecs;
+
             _specsInitialised = true;
         }
 
@@ -223,6 +230,14 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     btnAddItem.IsEnabled = false;
                     _selectedButtonItem = null;
 
+                    // Populate bulk condition combo from the service's template
+                    var conditions = FabricationManager.CurrentService.ServiceTemplate?.Conditions?.ToList();
+                    cmbBulkConditionSvc.ItemsSource = conditions;
+                    cmbBulkConditionSvc.SelectedIndex = conditions != null && conditions.Count > 0 ? 0 : -1;
+
+                    // Refresh Service Conditions DataGrid
+                    LoadServiceConditions();
+
                     var view = ButtonsTabControl_Services.Content as ServiceButtonsView;
                     if (view != null)
                     {
@@ -340,6 +355,267 @@ namespace FabricationSample.UserControls.DatabaseEditor
             MessageBox.Show(result.Message, "Save Services", MessageBoxButton.OK, image);
 
         }
+
+        private void DuplicateService_Click(object sender, RoutedEventArgs e)
+        {
+            if (FabricationManager.CurrentService == null)
+            {
+                MessageBox.Show("Please select a service first.", "No Service Selected",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var sourceService = FabricationManager.CurrentService;
+            string newName = sourceService.Name + " (Copy)";
+
+            // Prompt for new name
+            var win = new EditNameWindow("Duplicate Service", newName, sourceService.Group);
+            win.ShowDialog();
+            if (!win.Completed)
+                return;
+
+            newName = win.NewName;
+            string newGroup = win.NewGroup;
+
+            // Create the new service using the same template
+            ServiceTemplate template = sourceService.ServiceTemplate;
+            if (template == null)
+            {
+                MessageBox.Show("Source service has no template. Cannot duplicate.",
+                    "No Template", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            Service newService = FabricationAPIExamples.AddNewService(newName, newGroup, template);
+            if (newService != null)
+            {
+                // Copy specification if set
+                if (sourceService.Specification != null)
+                {
+                    try { newService.Specification = sourceService.Specification; }
+                    catch { }
+                }
+
+                LoadServices(newService);
+            }
+        }
+
+        #region Bulk Assignment — Services
+
+        private void btnNewConditionSvc_Click(object sender, RoutedEventArgs e)
+        {
+            var service = FabricationManager.CurrentService;
+            if (service?.ServiceTemplate == null) return;
+
+            var win = new EditNameWindow("New Condition", "New Condition", null);
+            win.ShowDialog();
+            if (!win.Completed || string.IsNullOrWhiteSpace(win.NewName)) return;
+
+            var cond = FabricationAPIExamples.AddNewServiceTemplateCondition(service.ServiceTemplate, win.NewName, -1, -1);
+            if (cond != null)
+            {
+                var conditions = service.ServiceTemplate.Conditions?.ToList();
+                cmbBulkConditionSvc.ItemsSource = conditions;
+                cmbBulkConditionSvc.SelectedItem = cond;
+            }
+        }
+
+        private void btnBulkAssignConditionSvc_Click(object sender, RoutedEventArgs e)
+        {
+            var service = FabricationManager.CurrentService;
+            if (service == null) return;
+
+            var condition = cmbBulkConditionSvc.SelectedItem as ServiceTemplateCondition;
+            if (condition == null)
+            {
+                MessageBox.Show("Select a condition first.", "Bulk Assign Condition",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string itemPath = FabricationManager.CurrentLoadedItemPath;
+            if (string.IsNullOrWhiteSpace(itemPath))
+            {
+                MessageBox.Show("Select an item from the item folders first to provide the item path.",
+                    "Bulk Assign Condition", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var view = ButtonsTabControl_Services.Content as ServiceButtonsView;
+            var selectedButtons = view?.GetSelectedButtons();
+            if (selectedButtons == null || selectedButtons.Count == 0)
+            {
+                MessageBox.Show("Select one or more buttons first.", "Bulk Assign Condition",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            int added = 0;
+            foreach (var fabButton in selectedButtons)
+            {
+                DBOperationResult result = fabButton.Button.AddServiceButtonItem(itemPath, condition);
+                if (result.Status == ResultStatus.Succeeded) added++;
+            }
+
+            MessageBox.Show($"Added condition '{condition.Description}' to {added} button(s).",
+                "Bulk Assign Condition", MessageBoxButton.OK, MessageBoxImage.Information);
+            view?.LoadServiceButtons();
+        }
+
+        private void btnBulkApplySpecSvc_Click(object sender, RoutedEventArgs e)
+        {
+            var spec = cmbBulkSpecSvc.SelectedItem as Specification;
+            if (spec == null)
+            {
+                MessageBox.Show("Select a specification first.", "Bulk Apply Specification",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var view = ButtonsTabControl_Services.Content as ServiceButtonsView;
+            var selectedButtons = view?.GetSelectedButtons();
+            if (selectedButtons == null || selectedButtons.Count == 0)
+            {
+                MessageBox.Show("Select one or more buttons first.", "Bulk Apply Specification",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            int updated = 0, failed = 0;
+            foreach (var fabButton in selectedButtons)
+            {
+                foreach (ServiceButtonItem bi in fabButton.Button.ServiceButtonItems)
+                {
+                    if (string.IsNullOrWhiteSpace(bi.ItemPath)) continue;
+                    try
+                    {
+                        Item itm = Autodesk.Fabrication.Content.ContentManager.LoadItem(bi.ItemPath);
+                        if (itm == null) { failed++; continue; }
+                        var result = itm.ChangeSpecification(spec, false);
+                        if (result.Status == ResultStatus.Succeeded)
+                        {
+                            Autodesk.Fabrication.Content.ContentManager.SaveItem(itm);
+                            updated++;
+                        }
+                        else
+                            failed++;
+                    }
+                    catch { failed++; }
+                }
+            }
+
+            string msg = $"Applied specification '{spec.Name}' to {updated} item(s).";
+            if (failed > 0) msg += $"\n{failed} item(s) could not be updated.";
+            MessageBox.Show(msg, "Bulk Apply Specification", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        #endregion
+
+        #region Service Conditions
+
+        void LoadServiceConditions()
+        {
+            var template = FabricationManager.CurrentService?.ServiceTemplate;
+            if (template == null)
+            {
+                dgServiceConditions.ItemsSource = null;
+                return;
+            }
+
+            int idx = 0;
+            var items = new ObservableCollection<FabServiceTemplateCondition>(
+                template.Conditions.Select(c => new FabServiceTemplateCondition(c, idx++)));
+            dgServiceConditions.ItemsSource = items;
+        }
+
+        private void btnAddServiceCondition_Click(object sender, RoutedEventArgs e)
+        {
+            var template = FabricationManager.CurrentService?.ServiceTemplate;
+            if (template == null) return;
+
+            var win = new AddServiceTemplateConditionWindow();
+            win.ShowDialog();
+            // The window calls back through FabricationManager; just reload
+            LoadServiceConditions();
+        }
+
+        private void dgServiceConditions_rowEditEnding(object sender, DataGridRowEditEndingEventArgs e)
+        {
+            var item = e.Row.Item as FabServiceTemplateCondition;
+            if (item == null) return;
+
+            if (!item.Description.Equals(item.Condition.Description))
+                item.Condition.Description = item.Description;
+
+            double lessThan = 0;
+            if (item.LessThanOrEqual.Equals("Unrestricted"))
+                lessThan = -1;
+            else
+                double.TryParse(item.LessThanOrEqual, out lessThan);
+
+            double greaterThan = 0;
+            if (item.GreaterThan.Equals("Unrestricted"))
+                greaterThan = -1;
+            else
+                double.TryParse(item.GreaterThan, out greaterThan);
+
+            if (lessThan != item.Condition.LessThanEqualTo || greaterThan != item.Condition.GreaterThan)
+                FabricationAPIExamples.SetServiceTemplateConditionValues(item.Condition, greaterThan, lessThan);
+        }
+
+        private void dgServiceConditions_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key != System.Windows.Input.Key.D ||
+                (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Shift) == 0)
+                return;
+
+            if (dgServiceConditions.SelectedItems.Count < 2) return;
+            dgServiceConditions.CommitEdit(DataGridEditingUnit.Cell, true);
+
+            var selected = new HashSet<FabServiceTemplateCondition>(
+                dgServiceConditions.SelectedItems.OfType<FabServiceTemplateCondition>());
+            var ordered = dgServiceConditions.Items.OfType<FabServiceTemplateCondition>()
+                .Where(i => selected.Contains(i)).ToList();
+
+            if (ordered.Count < 2) return;
+            var source = ordered[0];
+            double srcGt = source.GreaterThan.ToLower() == "unrestricted" ? -1 : 0;
+            double srcLt = source.LessThanOrEqual.ToLower() == "unrestricted" ? -1 : 0;
+            if (srcGt == 0) double.TryParse(source.GreaterThan, out srcGt);
+            if (srcLt == 0) double.TryParse(source.LessThanOrEqual, out srcLt);
+
+            for (int i = 1; i < ordered.Count; i++)
+            {
+                ordered[i].Description = source.Description;
+                ordered[i].GreaterThan = source.GreaterThan;
+                ordered[i].LessThanOrEqual = source.LessThanOrEqual;
+                if (ordered[i].Condition != null)
+                {
+                    ordered[i].Condition.Description = source.Description;
+                    FabricationAPIExamples.SetServiceTemplateConditionValues(ordered[i].Condition, srcGt, srcLt);
+                }
+            }
+            dgServiceConditions.Items.Refresh();
+            e.Handled = true;
+        }
+
+        private void deleteServiceCondition_Click(object sender, RoutedEventArgs e)
+        {
+            var item = dgServiceConditions.SelectedItem as FabServiceTemplateCondition;
+            if (item == null) return;
+
+            var template = FabricationManager.CurrentService?.ServiceTemplate;
+            if (template == null) return;
+
+            if (MessageBox.Show($"Delete condition '{item.Description}'?", "Delete Service Condition",
+                MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK)
+            {
+                if (FabricationAPIExamples.DeleteServiceTemplateCondition(template, item.Condition))
+                    LoadServiceConditions();
+            }
+        }
+
+        #endregion
 
         #endregion
     }

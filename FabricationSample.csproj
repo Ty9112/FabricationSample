@@ -93,6 +93,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="Sample.cs" />
+    <Compile Include="Services\Bridge\FabricationBridgeService.cs" />
     <Compile Include="Services\Export\CsvExportService.cs" />
     <Compile Include="Services\Export\ExportModels.cs" />
     <Compile Include="Services\Export\IExportService.cs" />
@@ -108,6 +109,7 @@
     <Compile Include="Services\Export\ItemStatusesExportService.cs" />
     <Compile Include="Services\Export\JobStatusesExportService.cs" />
     <Compile Include="Services\Export\SpecificationsExportService.cs" />
+    <Compile Include="Services\Export\RevitBridgeExportService.cs" />
     <Compile Include="Services\Import\CsvImportService.cs" />
     <Compile Include="Services\Import\IImportService.cs" />
     <Compile Include="Services\Import\ImportModels.cs" />
@@ -170,6 +172,10 @@
     </Compile>
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-ItemSwap.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-ProfileCopy.cs" />
+    <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Search.cs" />
+    <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-DataHealth.cs" />
+    <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Relationships.cs" />
+    <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-ManageContent.cs" />
     <Compile Include="UserControls\DatabaseEditor\DatabaseEditor-Specifications.cs" />
     <Compile Include="ProfileCopy\Models\ProfileInfo.cs" />
     <Compile Include="ProfileCopy\Models\DataTypeDescriptor.cs" />
@@ -181,9 +187,13 @@
     <Compile Include="ProfileCopy\Services\ProfileDiscoveryService.cs" />
     <Compile Include="ProfileCopy\Services\ProfileCopyService.cs" />
     <Compile Include="ProfileCopy\Services\ProfileManifestService.cs" />
+    <Compile Include="ProfileCopy\Services\ProfileCompareService.cs" />
     <Compile Include="ProfileCopy\Services\SelectiveCleanupService.cs" />
     <Compile Include="ProfileCopy\Windows\ProfileDataCopyWindow.xaml.cs">
       <DependentUpon>ProfileDataCopyWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ProfileCopy\Windows\ProfileCompareWindow.xaml.cs">
+      <DependentUpon>ProfileCompareWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="ProfileCopy\Windows\DataTypePreviewWindow.xaml.cs">
       <DependentUpon>DataTypePreviewWindow.xaml</DependentUpon>
@@ -353,6 +363,12 @@
     <Compile Include="Windows\InstallTableSelectionWindow.xaml.cs">
       <DependentUpon>InstallTableSelectionWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Windows\TemplateComposerWindow.xaml.cs">
+      <DependentUpon>TemplateComposerWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\ConditionMappingWindow.xaml.cs">
+      <DependentUpon>ConditionMappingWindow.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Page Include="Resources\Styles.xaml">
@@ -360,6 +376,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ProfileCopy\Windows\ProfileDataCopyWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ProfileCopy\Windows\ProfileCompareWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -604,6 +624,14 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Windows\InstallTableSelectionWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\TemplateComposerWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\ConditionMappingWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

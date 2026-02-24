@@ -620,6 +620,67 @@ namespace FabricationSample.Commands
             }
         }
 
+        /// <summary>
+        /// Export placed job items in a flat CSV for Dynamo, Power BI, or Revit integration.
+        /// All item properties are exported keyed by UniqueId.
+        /// </summary>
+        [CommandMethod("ExportJobItemsForRevit")]
+        public static void ExportJobItemsForRevit()
+        {
+            try
+            {
+                if (!ValidateFabricationLoaded())
+                    return;
+
+                Princ("Starting Revit bridge export...");
+
+                string exportFolder = PromptForExportLocation("Revit Bridge Items");
+                if (string.IsNullOrEmpty(exportFolder))
+                {
+                    Princ("Export cancelled: No folder selected.");
+                    return;
+                }
+
+                string exportPath = GenerateTimestampedPath(exportFolder, "RevitBridgeItems");
+
+                Princ("Generating job items CSV for Revit/BI...");
+                var exportService = new RevitBridgeExportService();
+
+                exportService.ProgressChanged += (sender, args) =>
+                {
+                    Princ($"  {args.Message}");
+                };
+
+                var options = new ExportOptions
+                {
+                    IncludeHeader = true,
+                    OpenAfterExport = true
+                };
+
+                var result = exportService.Export(exportPath, options);
+
+                if (result.IsSuccess)
+                {
+                    Princ($"Export complete: {result.RowCount} items exported to {exportPath}");
+                    ShowSuccess(result.FilePath, result.RowCount);
+                }
+                else if (result.WasCancelled)
+                {
+                    Princ("Export was cancelled by user.");
+                    MessageBox.Show("Export was cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    ShowError($"Export failed: {result.ErrorMessage}");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ShowError($"Unexpected error: {ex.Message}");
+                LogError("ExportJobItemsForRevit", ex);
+            }
+        }
+
         #endregion
     }
 }

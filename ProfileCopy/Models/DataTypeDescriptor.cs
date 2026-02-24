@@ -219,5 +219,23 @@ namespace FabricationSample.ProfileCopy.Models
                 new DataTypeDescriptor { DataType = DataType.ToolDefaults, DisplayName = "Tool Defaults", FileName = "TOOLDFLT.MAP", Group = "Other" },
             };
         }
+
+        /// <summary>
+        /// Gets the display name for a .MAP file name. Falls back to the file name if not found.
+        /// </summary>
+        public static string GetDisplayNameForFile(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+                return fileName;
+
+            var descriptors = GetAllDescriptors();
+            foreach (var desc in descriptors)
+            {
+                if (string.Equals(desc.FileName, fileName, System.StringComparison.OrdinalIgnoreCase))
+                    return desc.DisplayName;
+            }
+
+            return System.IO.Path.GetFileNameWithoutExtension(fileName);
+        }
     }
 }

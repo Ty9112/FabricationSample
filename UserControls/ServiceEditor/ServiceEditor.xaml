@@ -127,7 +127,7 @@
               <DataGrid x:Name="dgServiceEntries" VerticalAlignment="Stretch" CanUserSortColumns="True"
                     AutoGenerateColumns="False" Loaded="dgServiceEntries_Loaded"
                     CanUserAddRows="False" CanUserDeleteRows="False"
-                    SelectionMode="Single" IsReadOnly="True">
+                    SelectionMode="Extended" IsReadOnly="True">
                 <DataGrid.Columns>
                   <DataGridTextColumn Header="Service Name" Width="150" Binding="{Binding ServiceName}" IsReadOnly="True"/>
                   <DataGridTextColumn Header="Service Type" Width="120" Binding="{Binding ServiceTypeDescription}" IsReadOnly="True"/>
@@ -165,7 +165,7 @@
                           PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
               <DataGrid x:Name="dgButtonMappings" VerticalAlignment="Stretch" CanUserSortColumns="True"
                         AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                        SelectionMode="Single" IsReadOnly="True">
+                        SelectionMode="Extended" IsReadOnly="True">
                 <DataGrid.Columns>
                   <DataGridTextColumn Header="Tab Name" Width="120" Binding="{Binding TabName}" IsReadOnly="True"/>
                   <DataGridTextColumn Header="Button Name" Width="150" Binding="{Binding ButtonName}" IsReadOnly="True"/>

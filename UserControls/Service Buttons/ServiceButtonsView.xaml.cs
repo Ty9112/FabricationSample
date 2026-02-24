@@ -14,6 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Autodesk.Fabrication.DB;
+using Autodesk.Fabrication.Results;
 using FabricationSample.Data;
 using FabricationSample.Manager;
 using FabricationSample.FunctionExamples;
@@ -42,6 +43,166 @@ namespace FabricationSample.UserControls
 
         public ServiceTab CurrentServiceTab { get; set; }
         public ServiceButton CurrentServiceButton { get; set; }
+
+        /// <summary>
+        /// Returns all currently selected buttons from the active tab's ListView.
+        /// </summary>
+        public List<FabServiceButton> GetSelectedButtons()
+        {
+            var result = new List<FabServiceButton>();
+            // Find the ListView in the current tab's content
+            var tabItem = tbServiceTab.SelectedItem as FabServiceTab;
+            if (tabItem == null) return result;
+
+            // The ContentTemplate generates a StackPanel > ListView, find it
+            var container = tbServiceTab.Template?.FindName("PART_SelectedContentHost", tbServiceTab) as System.Windows.Controls.ContentPresenter;
+            if (container == null)
+            {
+                // Fallback: walk visual tree
+                container = FindVisualChild<System.Windows.Controls.ContentPresenter>(tbServiceTab);
+            }
+            if (container == null) return result;
+
+            var listView = FindVisualChild<ListView>(container);
+            if (listView == null) return result;
+
+            foreach (var item in listView.SelectedItems)
+            {
+                var btn = item as FabServiceButton;
+                if (btn != null)
+                    result.Add(btn);
+            }
+            return result;
+        }
+
+        private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (child is T found)
+                    return found;
+                var result = FindVisualChild<T>(child);
+                if (result != null)
+                    return result;
+            }
+            return null;
+        }
+
+        #endregion
+
+        #region Rubber-Band Selection
+
+        private Point _rubberBandStart;
+        private SelectionAdorner _rubberBandAdorner;
+        private bool _isRubberBanding;
+        private ListView _rubberBandListView;
+
+        private bool IsHitOnItem(ListView listView, Point point)
+        {
+            var hit = VisualTreeHelper.HitTest(listView, point)?.VisualHit as DependencyObject;
+            while (hit != null && !(hit is ListView))
+            {
+                if (hit is ListViewItem) return true;
+                hit = VisualTreeHelper.GetParent(hit);
+            }
+            return false;
+        }
+
+        private void lvSelectServiceButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var lv = sender as ListView;
+            if (lv == null || e.ClickCount > 1) return;
+
+            if (IsHitOnItem(lv, e.GetPosition(lv))) return;
+
+            _rubberBandStart = e.GetPosition(lv);
+            _isRubberBanding = true;
+            _rubberBandListView = lv;
+
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == 0)
+                lv.SelectedItems.Clear();
+
+            var layer = AdornerLayer.GetAdornerLayer(lv);
+            if (layer != null)
+            {
+                _rubberBandAdorner = new SelectionAdorner(lv, _rubberBandStart);
+                layer.Add(_rubberBandAdorner);
+            }
+
+            lv.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void lvSelectServiceButton_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isRubberBanding || _rubberBandAdorner == null || _rubberBandListView == null) return;
+            _rubberBandAdorner.Update(e.GetPosition(_rubberBandListView));
+        }
+
+        private void lvSelectServiceButton_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_isRubberBanding || _rubberBandListView == null) return;
+
+            _isRubberBanding = false;
+            _rubberBandListView.ReleaseMouseCapture();
+
+            if (_rubberBandAdorner != null)
+            {
+                var layer = AdornerLayer.GetAdornerLayer(_rubberBandListView);
+                layer?.Remove(_rubberBandAdorner);
+
+                var selRect = _rubberBandAdorner.GetSelectionRect();
+                SelectItemsInRect(_rubberBandListView, selRect);
+                _rubberBandAdorner = null;
+            }
+
+            _rubberBandListView = null;
+        }
+
+        private void SelectItemsInRect(ListView lv, Rect selRect)
+        {
+            foreach (var item in lv.Items)
+            {
+                var container = lv.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
+                if (container == null) continue;
+
+                var pos = container.TranslatePoint(new Point(0, 0), lv);
+                var itemRect = new Rect(pos, new System.Windows.Size(container.ActualWidth, container.ActualHeight));
+
+                if (selRect.IntersectsWith(itemRect))
+                    container.IsSelected = true;
+            }
+        }
+
+        private class SelectionAdorner : Adorner
+        {
+            private Point _start;
+            private Point _end;
+
+            public SelectionAdorner(UIElement element, Point start) : base(element)
+            {
+                _start = start;
+                _end = start;
+                IsHitTestVisible = false;
+            }
+
+            public void Update(Point end)
+            {
+                _end = end;
+                InvalidateVisual();
+            }
+
+            public Rect GetSelectionRect() => new Rect(_start, _end);
+
+            protected override void OnRender(DrawingContext dc)
+            {
+                var rect = new Rect(_start, _end);
+                var pen = new Pen(new SolidColorBrush(Color.FromArgb(200, 0, 120, 215)), 1);
+                var brush = new SolidColorBrush(Color.FromArgb(40, 0, 120, 215));
+                dc.DrawRectangle(brush, pen, rect);
+            }
+        }
 
         #endregion
 
@@ -451,6 +612,113 @@ namespace FabricationSample.UserControls
             FabricationAPIExamples.MoveServiceButton(tab.Tab, button.Button, 1);
             UpdateServiceButtons();
         }
+
+        #region Tab Context Menu — Select All / Copy / Paste
+
+        private class ServiceButtonClipboardData
+        {
+            public string Name { get; set; }
+            public string ButtonCode { get; set; }
+            public List<ServiceButtonItemData> Items { get; set; } = new List<ServiceButtonItemData>();
+        }
+
+        private class ServiceButtonItemData
+        {
+            public string ItemPath { get; set; }
+            public string ConditionDescription { get; set; }
+            public double GreaterThan { get; set; }
+            public double LessThanEqualTo { get; set; }
+        }
+
+        private static List<ServiceButtonClipboardData> _buttonClipboard;
+
+        private void selectAllButtons_Click(object sender, RoutedEventArgs e)
+        {
+            var lv = FindVisualChild<ListView>(tbServiceTab);
+            lv?.SelectAll();
+        }
+
+        private void copyTabButtons_Click(object sender, RoutedEventArgs e)
+        {
+            var menuItem = sender as MenuItem;
+            var tab = menuItem?.DataContext as FabServiceTab;
+            if (tab == null) return;
+
+            _buttonClipboard = new List<ServiceButtonClipboardData>();
+            foreach (ServiceButton button in tab.Tab.ServiceButtons)
+            {
+                var data = new ServiceButtonClipboardData
+                {
+                    Name = button.Name,
+                    ButtonCode = button.ButtonCode
+                };
+                foreach (ServiceButtonItem bi in button.ServiceButtonItems)
+                {
+                    data.Items.Add(new ServiceButtonItemData
+                    {
+                        ItemPath = bi.ItemPath,
+                        ConditionDescription = bi.ServiceTemplateCondition?.Description ?? "",
+                        GreaterThan = bi.GreaterThan,
+                        LessThanEqualTo = bi.LessThanEqualTo
+                    });
+                }
+                _buttonClipboard.Add(data);
+            }
+
+            MessageBox.Show($"Copied {_buttonClipboard.Count} button(s) from tab '{tab.Name}'.",
+                "Copy Tab", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void pasteTabButtons_Click(object sender, RoutedEventArgs e)
+        {
+            if (_buttonClipboard == null || _buttonClipboard.Count == 0)
+            {
+                MessageBox.Show("Nothing to paste. Copy a tab first.", "Paste Tab",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var menuItem = sender as MenuItem;
+            var tab = menuItem?.DataContext as FabServiceTab;
+            if (tab == null) return;
+
+            ServiceTemplate serviceTemplate = _viewType == ServiceButtonsViewType.Services
+                ? FabricationManager.CurrentService?.ServiceTemplate
+                : FabricationManager.CurrentServiceTemplate;
+            if (serviceTemplate == null) return;
+
+            var conditions = serviceTemplate.Conditions.ToList();
+            int addedButtons = 0, addedItems = 0;
+
+            foreach (var buttonData in _buttonClipboard)
+            {
+                DBOperationResult btnResult = tab.Tab.AddServiceButton(buttonData.Name);
+                if (btnResult.Status != ResultStatus.Succeeded) continue;
+
+                var newButton = btnResult.ReturnObject as ServiceButton;
+                if (newButton == null) continue;
+
+                if (!string.IsNullOrEmpty(buttonData.ButtonCode))
+                    newButton.ButtonCode = buttonData.ButtonCode;
+
+                addedButtons++;
+
+                foreach (var itemData in buttonData.Items)
+                {
+                    var cond = conditions.FirstOrDefault(c => c.Description == itemData.ConditionDescription);
+                    if (cond == null) continue;
+                    DBOperationResult itemResult = newButton.AddServiceButtonItem(itemData.ItemPath, cond);
+                    if (itemResult.Status == ResultStatus.Succeeded)
+                        addedItems++;
+                }
+            }
+
+            MessageBox.Show($"Pasted {addedButtons} button(s) with {addedItems} item(s) into tab '{tab.Name}'.",
+                "Paste Tab", MessageBoxButton.OK, MessageBoxImage.Information);
+            UpdateServiceTabs(CurrentServiceTab?.Id ?? -1);
+        }
+
+        #endregion
 
     }
 }

@@ -789,6 +789,12 @@ namespace FabricationSample.UserControls.DatabaseEditor
                   FabricationManager.EditServiceButtonItemWindow.txtSelectedItemPath.Text = itemPath;
                }
             }
+
+            // Dispatch to Manage Content handlers
+            if (trvItm.Tag is Autodesk.Fabrication.Content.ItemFolder folder)
+               OnContentFolderSelected(folder);
+            else if (isFile)
+               OnContentItemSelected(path);
          }
 
       }

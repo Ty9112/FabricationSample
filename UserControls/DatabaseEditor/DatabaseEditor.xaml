@@ -14,6 +14,7 @@
                 <ResourceDictionary Source="/FabricationSample;component/Resources/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <utils:SupplierIdsConverter x:Key="SupplierIdsConverter"/>
+            <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
             <Style x:Key="GroupedHeaderStyle" TargetType="{x:Type GroupItem}">
                 <Setter Property="Template">
                     <Setter.Value>
@@ -150,6 +151,8 @@
                     <Button x:Name="btnSaveJob" Width="100" Height="25" Content="Save Job" Click="btnSaveJob_Click" Margin="10,0,0,0"/>
                     <Button x:Name="btnSaveJobAs" Width="100" Height="25" Content="Save Job As" Click="btnSaveJobAs_Click" Margin="10,0,0,0"/>
                     <Button x:Name="btnUpdateItems" Width="100" Height="25" HorizontalAlignment="Right" Content="Update Items" Click="btnUpdateItems_Click" Margin="10,0,0,0"/>
+                    <Button x:Name="btnExportForRevit" Width="140" Height="25" Content="Export for Revit/BI" Click="btnExportForRevit_Click" Margin="10,0,0,0"
+                            ToolTip="Export job items as CSV for Revit/BIM coordination"/>
                 </StackPanel>
             </Grid>
         </TabItem>
@@ -632,11 +635,18 @@
         </TabItem>
 
         <TabItem x:Name="tbiServices" Header="Services" Loaded="tbiServices_Loaded" Height="24" VerticalAlignment="Top">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Orientation="Vertical" Margin="5">
+            <Grid Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*" MinHeight="80"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
+                <!-- Row 0: Service Selection + Management + Configuration -->
+                <StackPanel Grid.Row="0" Orientation="Vertical">
                     <!-- Service Selection -->
-                    <DockPanel Margin="0,0,0,0">
+                    <DockPanel Margin="0,0,0,10">
                         <TextBlock Text="Select Service" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <Button Content="Properties" Width="100" Click="serviceProperties_Click" DockPanel.Dock="Right" Margin="5,0,0,0"/>
                         <ComboBox Name="cmbSelectService" SelectionChanged="cmbSelectService_SelectionChanged">
@@ -644,54 +654,53 @@
                                 <GroupStyle>
                                     <GroupStyle.HeaderTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding Name}" FontWeight="Bold"></TextBlock>
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
                                         </DataTemplate>
                                     </GroupStyle.HeaderTemplate>
                                 </GroupStyle>
                             </ComboBox.GroupStyle>
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Name}"></TextBlock>
+                                    <TextBlock Text="{Binding Name}"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </DockPanel>
 
-                    <!-- Service Actions -->
-                    <WrapPanel Margin="0,8,0,0" HorizontalAlignment="Stretch">
-                        <Button Content="Edit Service Name" Width="115" Height="25" Margin="0,2,5,2" Click="EditServiceName_Click"/>
-                        <Button Content="Add Service" Width="100" Height="25" Margin="0,2,5,2" Click="AddService_Click"/>
-                        <Button Content="Delete Service" Width="100" Height="25" Margin="0,2,5,2" Click="DeleteService_Click"/>
-                        <Button Content="Save Services" Width="100" Height="25" Margin="0,2,5,2" Click="SaveServices_Click"/>
-                        <Button Content="Export Item Data" Width="115" Height="25" Margin="0,2,5,2" Click="btnExportItemData_Click"/>
-                        <Button Content="Export Button Report" Width="140" Height="25" Margin="0,2,5,2" Click="btnExportButtonReport_Click"/>
-                        <Button Content="Import Button Report" Width="140" Height="25" Margin="0,2,5,2" Click="btnImportButtonReport_Click"/>
-                        <Button Content="Paste Button Report" Width="140" Height="25" Margin="0,2,5,2" Click="btnPasteImportButtonReport_Click" ToolTip="Import button report data from clipboard"/>
+                    <!-- Service Management Group -->
+                    <TextBlock Text="Service Management" FontWeight="Bold" Margin="5,0,0,4"/>
+                    <WrapPanel Margin="5,0,0,0">
+                        <Button Content="Edit Name" Width="90" Click="EditServiceName_Click" Margin="0,0,5,5"/>
+                        <Button Content="Add Service" Width="100" Click="AddService_Click" Margin="0,0,5,5"/>
+                        <Button Content="Delete Service" Width="100" Click="DeleteService_Click" Margin="0,0,5,5"/>
+                        <Button Content="Duplicate Service" Width="115" Click="DuplicateService_Click" Margin="0,0,5,5"
+                                ToolTip="Create a copy of the current service"/>
+                        <Button Content="Save Services" Width="100" Click="SaveServices_Click" Margin="0,0,5,5"/>
                     </WrapPanel>
+                    <Separator Margin="5,4"/>
 
-                    <!-- Service Template -->
-                    <DockPanel Margin="0,15,0,0">
+                    <!-- Configuration Group -->
+                    <TextBlock Text="Configuration" FontWeight="Bold" Margin="5,0,0,4"/>
+                    <DockPanel Margin="5,2,5,0">
                         <TextBlock Text="Service Template" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <ComboBox Name="cmbUseServiceTemplate" SelectionChanged="cmbUseServiceTemplate_SelectionChanged">
                             <ComboBox.GroupStyle>
                                 <GroupStyle>
                                     <GroupStyle.HeaderTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding Name}" FontWeight="Bold"></TextBlock>
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
                                         </DataTemplate>
                                     </GroupStyle.HeaderTemplate>
                                 </GroupStyle>
                             </ComboBox.GroupStyle>
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Name}"></TextBlock>
+                                    <TextBlock Text="{Binding Name}"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </DockPanel>
-
-                    <!-- Service Specification -->
-                    <DockPanel Margin="0,8,0,0">
+                    <DockPanel Margin="5,6,5,0">
                         <TextBlock Text="Specification" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <CheckBox Name="chkServiceSpecification" VerticalAlignment="Center" Click="chkServiceSpecification_Click" DockPanel.Dock="Right" Margin="5,0,0,0"/>
                         <TextBlock Text="Not Set" VerticalAlignment="Center" DockPanel.Dock="Right" Margin="5,0,0,0"/>
@@ -700,107 +709,284 @@
                                 <GroupStyle>
                                     <GroupStyle.HeaderTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding Name}" FontWeight="Bold"></TextBlock>
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
                                         </DataTemplate>
                                     </GroupStyle.HeaderTemplate>
                                 </GroupStyle>
                             </ComboBox.GroupStyle>
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Name}"></TextBlock>
+                                    <TextBlock Text="{Binding Name}"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </DockPanel>
-
-                    <!-- Service Buttons Tab Control -->
-                    <ContentControl Name="ButtonsTabControl_Services" Margin="0,15,0,0"
-                            HorizontalAlignment="Stretch"/>
-
-                    <!-- Button Item Details -->
-                    <DockPanel Margin="0,15,0,0">
-                        <TextBlock Text="Select Button Item" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <ComboBox Name="cmbSelectButtonItem" SelectionChanged="cmbSelectButtonItem_SelectionChanged">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding ServiceTemplateCondition.Description}"></TextBlock>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </DockPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Label Content="Greater Than:"/>
-                        <Label Content="Value" x:Name="labGreaterThan"/>
-                        <Label Content="Less Than Or Equal To:" Margin="30,0,0,0"/>
-                        <Label Content="Value" x:Name="labLessThan"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                        <Label Content="Item Path:" />
-                        <Label x:Name="labItemPath" Content="Path" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,15,0,10">
-                        <Button x:Name="btnAddItem" Content="Add Item To Job" Height="25" Width="120" Click="btnAddItem_Click"/>
-                    </StackPanel>
-
+                    <Separator Margin="5,8"/>
+                    <TextBlock Text="Tabs &amp; Buttons" FontWeight="Bold" Margin="5,0,0,4"/>
                 </StackPanel>
-            </ScrollViewer>
+
+                <!-- Row 1: Tabs &amp; Buttons — fills available height, resizes with window -->
+                <ContentControl Grid.Row="1" Name="ButtonsTabControl_Services"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                Margin="5,0,5,0"/>
+
+                <!-- Row 2: GridSplitter -->
+                <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch"
+                              ShowsPreview="True" Background="#FFD0D0D0" Cursor="SizeNS"/>
+
+                <!-- Row 3: Button Item Details + Import/Export -->
+                <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,0,0,4">
+                    <StackPanel Orientation="Vertical">
+                        <Separator Margin="5,4"/>
+
+                        <!-- Button Item Details Group -->
+                        <TextBlock Text="Button Item Details" FontWeight="Bold" Margin="5,0,0,4"/>
+                        <DockPanel Margin="5,2,5,0">
+                            <TextBlock Text="Select Button Item" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <ComboBox Name="cmbSelectButtonItem" SelectionChanged="cmbSelectButtonItem_SelectionChanged">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding ServiceTemplateCondition.Description}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </DockPanel>
+                        <StackPanel Orientation="Horizontal" Margin="5,6,0,0">
+                            <Label Content="Greater Than:" Padding="0,0,4,0"/>
+                            <Label Content="Value" x:Name="labGreaterThan" Padding="0"/>
+                            <Label Content="Less Than Or Equal To:" Margin="20,0,0,0" Padding="0,0,4,0"/>
+                            <Label Content="Value" x:Name="labLessThan" Padding="0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="5,4,0,0">
+                            <Label Content="Item Path:" Padding="0,0,4,0"/>
+                            <Label x:Name="labItemPath" Content="Path" Padding="0"/>
+                        </StackPanel>
+                        <WrapPanel Margin="5,6,0,0">
+                            <Button x:Name="btnAddItem" Content="Add Item To Job" Height="25" Width="120" Click="btnAddItem_Click" Margin="0,0,5,5"/>
+                        </WrapPanel>
+                        <Separator Margin="5,8"/>
+
+                        <!-- Bulk Assignment Group -->
+                        <TextBlock Text="Bulk Assignment" FontWeight="Bold" Margin="5,0,0,4"/>
+                        <DockPanel Margin="5,2,5,0">
+                            <TextBlock Text="Condition" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <Button Content="New Condition" Width="110" Click="btnNewConditionSvc_Click" DockPanel.Dock="Right" Margin="5,0,0,0"
+                                    ToolTip="Create a new condition on the service template"/>
+                            <Button Content="Assign to Selected" Width="130" Click="btnBulkAssignConditionSvc_Click" DockPanel.Dock="Right" Margin="5,0,0,0"
+                                    ToolTip="Add a button item with this condition to all selected buttons"/>
+                            <ComboBox Name="cmbBulkConditionSvc">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Description}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </DockPanel>
+                        <DockPanel Margin="5,6,5,4">
+                            <TextBlock Text="Specification" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <Button Content="Apply to Selected" Width="130" Click="btnBulkApplySpecSvc_Click" DockPanel.Dock="Right" Margin="5,0,0,0"
+                                    ToolTip="Apply this specification to the items on all selected buttons"/>
+                            <ComboBox Name="cmbBulkSpecSvc">
+                                <ComboBox.GroupStyle>
+                                    <GroupStyle>
+                                        <GroupStyle.HeaderTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                            </DataTemplate>
+                                        </GroupStyle.HeaderTemplate>
+                                    </GroupStyle>
+                                </ComboBox.GroupStyle>
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </DockPanel>
+                        <Separator Margin="5,4"/>
+
+                        <!-- Service Conditions Group -->
+                        <TextBlock Text="Service Conditions" FontWeight="Bold" Margin="5,0,0,4"/>
+                        <TextBlock Text="Editing conditions here modifies the linked Service Template."
+                                   Foreground="Gray" FontStyle="Italic" FontSize="11" Margin="5,0,0,4"/>
+                        <WrapPanel Margin="5,0,0,4">
+                            <Button Content="Add Condition" Width="110" Click="btnAddServiceCondition_Click" Margin="0,0,5,5"/>
+                        </WrapPanel>
+                        <DataGrid x:Name="dgServiceConditions" VerticalAlignment="Top" CanUserSortColumns="True" Margin="5,0,5,0"
+                                  AutoGenerateColumns="False"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Hidden" CanUserAddRows="False" CanUserDeleteRows="False"
+                                  SelectionMode="Extended" HorizontalAlignment="Stretch"
+                                  RowEditEnding="dgServiceConditions_rowEditEnding"
+                                  PreviewKeyDown="dgServiceConditions_KeyDown">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Description" Width="*" Binding="{Binding Description, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Greater Than" Width="150" Binding="{Binding GreaterThan, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                                <DataGridTextColumn Header="Less Than or Equal To" Width="150" Binding="{Binding LessThanOrEqual, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                            </DataGrid.Columns>
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Delete Condition" Click="deleteServiceCondition_Click"/>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
+                        </DataGrid>
+                        <Separator Margin="5,8"/>
+
+                        <!-- Import / Export Group -->
+                        <TextBlock Text="Import / Export" FontWeight="Bold" Margin="5,0,0,4"/>
+                        <WrapPanel Margin="5,0,0,0">
+                            <Button Content="Export Item Data" Width="115" Click="btnExportItemData_Click" Margin="0,0,5,5"/>
+                            <Button Content="Export Button Report" Width="140" Click="btnExportButtonReport_Click" Margin="0,0,5,5"/>
+                            <Button Content="Import Button Report" Width="140" Click="btnImportButtonReport_Click" Margin="0,0,5,5"/>
+                            <Button Content="Paste Button Report" Width="140" Click="btnPasteImportButtonReport_Click" Margin="0,0,5,5"
+                                    ToolTip="Import button report data from clipboard"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
         </TabItem>
 
         <TabItem x:Name="tbiServiceTemplates" Header="Service Templates" Loaded="tbiServiceTemplates_Loaded" Unloaded="tbiServiceTemplates_UnLoaded">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Margin="0,10,0,0">
-                <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" MinHeight="420">
+            <Grid Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="2*" MinHeight="80"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="*" MinHeight="80"/>
+                </Grid.RowDefinitions>
+
+                <!-- Row 0: Template Selection + Management -->
+                <StackPanel Grid.Row="0" Orientation="Vertical">
+                    <!-- Template Selection -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <Label Content="Select Service Template" Width="150"></Label>
+                        <Label Content="Select Service Template" Width="150"/>
                         <ComboBox Name="cmbSelectServiceTemplate" Width="460" SelectionChanged="cmbSelectServiceTemplate_SelectionChanged" DisplayMemberPath="Name"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Content="Edit Template Name" Click="editServiceTemplateName_Click" Width="130" />
-                        <Button Content="Add Template" Click="addServiceTemplate_Click" Margin="10,0,0,0" Width="115" />
-                        <Button Content="Delete Template" Click="deleteServiceTemplate_Click" Margin="10,0,0,0" Width="115" />
-                    </StackPanel>
-                    <StackPanel>
-                        <ContentControl Name="ButtonsTabControl_Templates" Margin="0,20,0,0"
-                            HorizontalAlignment="Stretch"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label Content="Actions" FontWeight="Bold" HorizontalAlignment="Center" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                        <Button Content="Add New Template Condition" Width="190" Click="addServiceTemplateCondition_Click" />
-                        <Button Content="Add New Tab" Width="105" Click="addServiceTab_Click"  Margin="10,0,0,0" />
-                        <Button Content="Add Button" Width="100" Click="addServiceButton_Click"  Margin="10,0,0,0"/>
-                        <Button Content="Save" Width="90" Click="btnSaveServiceTemplates_Click" Margin="10,0,0,0"></Button>
-                        <Button Content="Export Button Report" Width="155" Click="btnExportTemplateButtonReport_Click" Margin="10,0,0,0"/>
-                        <Button Content="Import Button Report" Width="155" Click="btnImportTemplateButtonReport_Click" Margin="10,0,0,0"/>
-                        <Button Content="Paste Button Report" Width="155" Click="btnPasteImportTemplateButtonReport_Click" Margin="10,0,0,0" ToolTip="Import button report data from clipboard"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Label Content="Service Template Conditions" FontWeight="Bold" HorizontalAlignment="Center" />
-                    </StackPanel>
 
-                    <DataGrid x:Name="dgTemplateConditions" VerticalAlignment="Top" CanUserSortColumns="True" Margin="5,10,0,0"
-                    AutoGenerateColumns="False" Loaded="dgTemplateConditions_OnLoaded" ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                        VerticalScrollBarVisibility="Hidden" CanUserAddRows="True" CanUserDeleteRows="True" 
-                        SelectionMode="Single" Width="600" HorizontalAlignment="Left" RowEditEnding="dgTemplateConditions_rowEditEnding">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Description" Width="300" Binding="{Binding Description, Mode=TwoWay}"/>
-                            <DataGridTextColumn Header="Greater Than" Width="150" Binding="{Binding GreaterThan, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
-                            <DataGridTextColumn Header="Less Than or Equal To" Width="150" Binding="{Binding LessThanOrEqual, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
-                        </DataGrid.Columns>
-
-                        <DataGrid.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Delete Condition" Click="deleteTemplateCondition_Click"></MenuItem>
-                            </ContextMenu>
-                        </DataGrid.ContextMenu>
-
-                        <!--<DataGrid.ItemContainerStyle>
-              <Style TargetType="{x:Type MenuItem}"></Style>
-            </DataGrid.ItemContainerStyle>-->
-
-                    </DataGrid>
+                    <!-- Template Management Group -->
+                    <TextBlock Text="Template Management" FontWeight="Bold" Margin="5,0,0,4"/>
+                    <WrapPanel Margin="5,0,0,0">
+                        <Button Content="Edit Name" Click="editServiceTemplateName_Click" Width="90" Margin="0,0,5,5"/>
+                        <Button Content="Add Template" Click="addServiceTemplate_Click" Width="100" Margin="0,0,5,5"/>
+                        <Button Content="Delete Template" Click="deleteServiceTemplate_Click" Width="110" Margin="0,0,5,5"/>
+                        <Button Content="Duplicate Template" Click="DuplicateTemplate_Click" Width="125" Margin="0,0,5,5"
+                                ToolTip="Create a copy of the current template with all tabs, buttons, and conditions"/>
+                    </WrapPanel>
+                    <Separator Margin="5,4"/>
+                    <TextBlock Text="Tabs &amp; Buttons" FontWeight="Bold" Margin="5,0,0,4"/>
                 </StackPanel>
-            </ScrollViewer>
+
+                <!-- Row 1: Tabs &amp; Buttons — fills available height, resizes with window -->
+                <ContentControl Grid.Row="1" Name="ButtonsTabControl_Templates"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                Margin="5,0,5,0"/>
+
+                <!-- Row 2: Action buttons below content area -->
+                <WrapPanel Grid.Row="2" Margin="5,6,0,4">
+                    <Button Content="Add Tab" Width="80" Click="addServiceTab_Click" Margin="0,0,5,5"/>
+                    <Button Content="Add Button" Width="90" Click="addServiceButton_Click" Margin="0,0,5,5"/>
+                    <Button Content="Save" Width="70" Click="btnSaveServiceTemplates_Click" Margin="0,0,5,5"/>
+                    <Button Content="Bulk Add Item to Selected" Width="170" Click="BulkAddItemToButtons_Click" Margin="0,0,5,5"
+                            ToolTip="Select multiple buttons (Ctrl+Click), then assign the same condition and item path to all"/>
+                </WrapPanel>
+
+                <!-- Row 3: GridSplitter -->
+                <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch"
+                              ShowsPreview="True" Background="#FFD0D0D0" Cursor="SizeNS"/>
+
+                <!-- Row 4: Composition + Conditions + Import/Export -->
+                <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Vertical">
+                        <Separator Margin="5,4"/>
+
+                        <!-- Composition Group -->
+                        <TextBlock Text="Composition" FontWeight="Bold" Margin="5,0,0,4"/>
+                        <WrapPanel Margin="5,0,0,0">
+                            <Button Content="Compose Template" Width="130" Click="btnComposeTemplate_Click" Margin="0,0,5,5"
+                                    ToolTip="Build a new service template by selecting tabs/buttons from existing templates"/>
+                        </WrapPanel>
+                        <Separator Margin="5,4"/>
+
+                        <!-- Conditions Group -->
+                        <TextBlock Text="Service Template Conditions" FontWeight="Bold" Margin="5,0,0,4"/>
+                        <WrapPanel Margin="5,0,0,4">
+                            <Button Content="Add Condition" Width="110" Click="addServiceTemplateCondition_Click" Margin="0,0,5,5"/>
+                            <Button Content="Copy Conditions From..." Width="160" Click="CopyConditions_Click" Margin="0,0,5,5"
+                                    ToolTip="Copy conditions from another service template"/>
+                        </WrapPanel>
+                        <DataGrid x:Name="dgTemplateConditions" VerticalAlignment="Top" CanUserSortColumns="True" Margin="5,0,5,0"
+                            AutoGenerateColumns="False" Loaded="dgTemplateConditions_OnLoaded"
+                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                            VerticalScrollBarVisibility="Hidden" CanUserAddRows="True" CanUserDeleteRows="True"
+                            SelectionMode="Extended" HorizontalAlignment="Stretch"
+                            RowEditEnding="dgTemplateConditions_rowEditEnding"
+                            PreviewKeyDown="dgTemplateConditions_KeyDown">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Description" Width="*" Binding="{Binding Description, Mode=TwoWay}"/>
+                                <DataGridTextColumn Header="Greater Than" Width="150" Binding="{Binding GreaterThan, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                                <DataGridTextColumn Header="Less Than or Equal To" Width="150" Binding="{Binding LessThanOrEqual, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                            </DataGrid.Columns>
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Delete Condition" Click="deleteTemplateCondition_Click"/>
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
+                        </DataGrid>
+                        <Separator Margin="5,8"/>
+
+                        <!-- Import / Export Group -->
+                        <TextBlock Text="Import / Export" FontWeight="Bold" Margin="5,0,0,4"/>
+                        <WrapPanel Margin="5,0,0,0">
+                            <Button Content="Export Button Report" Width="140" Click="btnExportTemplateButtonReport_Click" Margin="0,0,5,5"/>
+                            <Button Content="Import Button Report" Width="140" Click="btnImportTemplateButtonReport_Click" Margin="0,0,5,5"/>
+                            <Button Content="Paste Button Report" Width="140" Click="btnPasteImportTemplateButtonReport_Click" Margin="0,0,5,5"
+                                    ToolTip="Import button report data from clipboard"/>
+                        </WrapPanel>
+                        <Separator Margin="5,8"/>
+
+                        <!-- Bulk Assignment Group -->
+                        <TextBlock Text="Bulk Assignment" FontWeight="Bold" Margin="5,0,0,4"/>
+                        <DockPanel Margin="5,2,5,0">
+                            <TextBlock Text="Condition" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <Button Content="New Condition" Width="110" Click="btnNewConditionTmpl_Click" DockPanel.Dock="Right" Margin="5,0,0,0"
+                                    ToolTip="Create a new condition on this template"/>
+                            <Button Content="Assign to Selected" Width="130" Click="btnBulkAssignConditionTmpl_Click" DockPanel.Dock="Right" Margin="5,0,0,0"
+                                    ToolTip="Add a button item with this condition to all selected buttons"/>
+                            <ComboBox Name="cmbBulkConditionTmpl">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Description}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </DockPanel>
+                        <DockPanel Margin="5,6,5,6">
+                            <TextBlock Text="Specification" Width="110" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <Button Content="Apply to Selected" Width="130" Click="btnBulkApplySpecTmpl_Click" DockPanel.Dock="Right" Margin="5,0,0,0"
+                                    ToolTip="Apply this specification to the items on all selected buttons"/>
+                            <ComboBox Name="cmbBulkSpecTmpl">
+                                <ComboBox.GroupStyle>
+                                    <GroupStyle>
+                                        <GroupStyle.HeaderTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                            </DataTemplate>
+                                        </GroupStyle.HeaderTemplate>
+                                    </GroupStyle>
+                                </ComboBox.GroupStyle>
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </DockPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
         </TabItem>
 
         <TabItem x:Name="tbiMaterials" Header="Materials" Loaded="tbiMaterials_Loaded">
@@ -1054,51 +1240,227 @@
         </TabItem>
 
         <TabItem x:Name="tbiCreateItem" Header="Manage Content" Loaded="tbiCreateItem_Loaded">
-            <StackPanel Orientation="Vertical">
-                <StackPanel.Resources>
-                    <Style TargetType="{x:Type TreeViewItem}">
-                        <!-- Style for the selected item -->
-                        <Setter Property="BorderThickness" Value="1"/>
-                        <Style.Triggers>
-                            <!-- Selected and has focus -->
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="BorderBrush" Value="#7DA2CE"/>
-                            </Trigger>
-
-                            <!-- Selected but does not have the focus -->
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="IsSelected" Value="True"/>
-                                    <Condition Property="IsSelectionActive" Value="False"/>
-                                </MultiTrigger.Conditions>
-                                <Setter Property="BorderBrush" Value="#D9D9D9"/>
-                            </MultiTrigger>
-                        </Style.Triggers>
-                        <Style.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="2"/>
-                            </Style>
-                        </Style.Resources>
-                    </Style>
-                </StackPanel.Resources>
-
-                <StackPanel>
-                    <ContentControl Name="ItemsFolder_ManageContent" Width="620"
-                            HorizontalAlignment="Left"/>
-                </StackPanel>
-
-                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                    <Button x:Name="btnExportContent" Width="120" Height="24"
-                            Content="Export Items" Click="btnExportContent_Click" Margin="0,0,10,0"/>
-                    <Button x:Name="btnImportContent" Width="120" Height="24"
-                            Content="Import Items" Click="btnImportContent_Click"/>
-                </StackPanel>
-
-                <StackPanel Orientation="Horizontal" Height="60" >
-                    <ContentControl Name="ccItemCreateContent"></ContentControl>
-                </StackPanel>
-
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="300" MinWidth="200"/>
+                    <ColumnDefinition Width="5"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <!-- LEFT PANEL: Search + Tree + Export/Import -->
+                <DockPanel Grid.Column="0">
+                    <DockPanel.Resources>
+                        <Style TargetType="{x:Type TreeViewItem}">
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="BorderBrush" Value="#7DA2CE"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                        <Condition Property="IsSelectionActive" Value="False"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="BorderBrush" Value="#D9D9D9"/>
+                                </MultiTrigger>
+                            </Style.Triggers>
+                            <Style.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="2"/>
+                                </Style>
+                            </Style.Resources>
+                        </Style>
+                    </DockPanel.Resources>
+                    <!-- Search box at top -->
+                    <DockPanel DockPanel.Dock="Top" Margin="0,2,0,4">
+                        <TextBlock Text="Search:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <Button Content="X" Width="20" DockPanel.Dock="Right" Click="btnClearContentSearch_Click"/>
+                        <TextBox x:Name="txtSearchContent" TextChanged="txtSearchContent_TextChanged"/>
+                    </DockPanel>
+                    <!-- Export/Import buttons at bottom -->
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,5,0,0">
+                        <Button x:Name="btnExportContent" Width="120" Height="24"
+                                Content="Export Items" Click="btnExportContent_Click" Margin="0,0,10,0"/>
+                        <Button x:Name="btnImportContent" Width="120" Height="24"
+                                Content="Import Items" Click="btnImportContent_Click"/>
+                    </StackPanel>
+                    <!-- Item folder tree -->
+                    <ContentControl Name="ItemsFolder_ManageContent" HorizontalAlignment="Stretch"/>
+                    <!-- Hidden: used by legacy ItemFolders_SelectedItemChange for CreateItem/LoadItem -->
+                    <ContentControl Name="ccItemCreateContent" Visibility="Collapsed"/>
+                </DockPanel>
+                <!-- VERTICAL GRID SPLITTER -->
+                <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch" Background="#FFCCCCCC" Cursor="SizeWE"
+                              ShowsPreview="True"/>
+                <!-- RIGHT PANEL -->
+                <Grid Grid.Column="2" Margin="5,0,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" MinHeight="100"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition Height="Auto" MinHeight="60"/>
+                    </Grid.RowDefinitions>
+                    <!-- TOP: Folder contents grid OR single item detail -->
+                    <Grid Grid.Row="0">
+                        <!-- Folder mode: DataGrid of folder contents -->
+                        <DockPanel x:Name="pnlFolderContents" Visibility="Collapsed">
+                            <!-- Navigation + selection toolbar -->
+                            <DockPanel DockPanel.Dock="Top" Margin="0,2,0,4">
+                                <Button x:Name="btnBackFolder" Content="&#x2190; Back" Width="60" Height="22"
+                                        Click="btnBackFolder_Click" Margin="0,0,5,0" DockPanel.Dock="Left"
+                                        IsEnabled="False" ToolTip="Navigate to parent folder"/>
+                                <Button Content="Select All" Width="75" Height="22" Click="btnSelectAll_Click" Margin="0,0,5,0" DockPanel.Dock="Left"/>
+                                <Button Content="Select None" Width="80" Height="22" Click="btnSelectNone_Click" DockPanel.Dock="Left"/>
+                                <ToggleButton x:Name="tglShowSubfolders" Content="Show All Subfolders" Width="130" Height="22"
+                                              Margin="5,0,0,0" DockPanel.Dock="Left"
+                                              Checked="tglShowSubfolders_Checked" Unchecked="tglShowSubfolders_Unchecked"/>
+                                <TextBlock x:Name="txtFolderPath" VerticalAlignment="Center" Margin="10,0,0,0"
+                                           FontStyle="Italic" Foreground="Gray"/>
+                            </DockPanel>
+                            <!-- Filter for blanks toolbar -->
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                                <TextBlock Text="Filter blanks:" VerticalAlignment="Center" Margin="0,0,5,0" DockPanel.Dock="Left"/>
+                                <ComboBox x:Name="cmbFilterBlankColumn" Width="140" Height="22" DockPanel.Dock="Left"
+                                          Margin="0,0,8,0" SelectionChanged="cmbFilterBlankColumn_SelectionChanged">
+                                    <ComboBoxItem Content="Off" IsSelected="True" Tag="Off"/>
+                                    <ComboBoxItem Content="Specification" Tag="SpecificationName"/>
+                                    <ComboBoxItem Content="Price List" Tag="PriceListName"/>
+                                    <ComboBoxItem Content="Install Times" Tag="InstallTimesName"/>
+                                    <ComboBoxItem Content="Fab Times" Tag="FabTimesName"/>
+                                    <ComboBoxItem Content="Any Blank Column" Tag="AnyBlank"/>
+                                </ComboBox>
+                                <TextBlock VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic"
+                                           Text="Show only rows where the selected column is empty"/>
+                            </DockPanel>
+                            <DataGrid x:Name="dgFolderContents" AutoGenerateColumns="False"
+                                      CanUserSortColumns="True" IsReadOnly="True" SelectionMode="Extended"
+                                      MouseDoubleClick="dgFolderContents_MouseDoubleClick"
+                                      SelectionChanged="dgFolderContents_SelectionChanged"
+                                      EnableRowVirtualization="True"
+                                      VirtualizingStackPanel.IsVirtualizing="True"
+                                      VirtualizingStackPanel.VirtualizationMode="Recycling">
+                                <DataGrid.Columns>
+                                    <DataGridCheckBoxColumn Header="" Width="30"
+                                        Binding="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <DataGridTextColumn Header="Type" Width="50" Binding="{Binding TypeIcon}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Name" Width="*" MinWidth="100" Binding="{Binding DisplayName}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="CID" Width="50" Binding="{Binding CID}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Service" Width="100" Binding="{Binding ServiceName}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Material" Width="90" Binding="{Binding MaterialName}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Specification" Width="100" Binding="{Binding SpecificationName}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Price List" Width="90" Binding="{Binding PriceListName}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Install Times" Width="100" Binding="{Binding InstallTimesName}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Fab Times" Width="90" Binding="{Binding FabTimesName}" IsReadOnly="True"/>
+                                    <DataGridCheckBoxColumn Header="Bought Out" Width="75" Binding="{Binding IsBoughtOut}" IsReadOnly="True"/>
+                                </DataGrid.Columns>
+                                <DataGrid.RowStyle>
+                                    <Style TargetType="DataGridRow">
+                                        <EventSetter Event="MouseRightButtonUp" Handler="dgFolderContents_RowRightClick"/>
+                                    </Style>
+                                </DataGrid.RowStyle>
+                            </DataGrid>
+                        </DockPanel>
+                        <!-- Item mode: Single item detail panel -->
+                        <ScrollViewer x:Name="pnlContentDetail" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <!-- Thumbnail + Identity -->
+                                <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
+                                    <Image x:Name="imgContentItem" Width="64" Height="64" Margin="0,0,10,0"/>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock><Run Text="CID: "/><Run x:Name="txtContentCID"/></TextBlock>
+                                        <TextBlock><Run Text="Database ID: "/><Run x:Name="txtContentDatabaseId"/></TextBlock>
+                                        <TextBlock><Run Text="Service: "/><Run x:Name="txtContentService"/></TextBlock>
+                                    </StackPanel>
+                                </StackPanel>
+                                <Separator Margin="0,5"/>
+                                <!-- Read-only fields -->
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Material" VerticalAlignment="Center" Margin="5"/><TextBlock x:Name="txtContentMaterial" VerticalAlignment="Center"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Specification" VerticalAlignment="Center" Margin="5"/><TextBlock x:Name="txtContentSpecification" VerticalAlignment="Center"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Section" VerticalAlignment="Center" Margin="5"/><TextBlock x:Name="txtContentSection" VerticalAlignment="Center"/></DockPanel>
+                                <Separator Margin="0,5"/>
+                                <!-- Table assignment combos -->
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Price List" VerticalAlignment="Center" Margin="5"/><ComboBox x:Name="cmbContentPriceList"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Installation Times" VerticalAlignment="Center" Margin="5"/><ComboBox x:Name="cmbContentInstallTimes"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Fabrication Times" VerticalAlignment="Center" Margin="5"/><ComboBox x:Name="cmbContentFabTimes"/></DockPanel>
+                                <Separator Margin="0,5"/>
+                                <!-- Editable text fields -->
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Notes" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtContentNotes"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Alias" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtContentAlias"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Drawing Name" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtContentDrawingName"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Order" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtContentOrder"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Zone" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtContentZone"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Equipment Tag" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtContentEquipmentTag"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Pallet" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtContentPallet"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Spool Name" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtContentSpoolName"/></DockPanel>
+                                <Separator Margin="0,5"/>
+                                <!-- Action buttons -->
+                                <StackPanel Orientation="Horizontal" Margin="5,5,0,5">
+                                    <Button Content="Save Changes" Width="120" Height="24" Click="btnSaveContentItem_Click" Margin="0,0,10,0"/>
+                                    <Button Content="Add to Job" Width="120" Height="24" Click="btnAddContentToJob_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                    <!-- HORIZONTAL GRID SPLITTER -->
+                    <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch" Background="#FFCCCCCC" Cursor="SizeNS"
+                                  ShowsPreview="True"/>
+                    <!-- BOTTOM: Product Info + Bulk assignment panel -->
+                    <Border Grid.Row="2" BorderBrush="#FFCCCCCC" BorderThickness="0,1,0,0" Padding="0,5,0,0">
+                        <StackPanel>
+                            <!-- Product List section: shown when a non-folder item is selected -->
+                            <StackPanel x:Name="pnlProductInfo" Visibility="Collapsed">
+                                <DockPanel Margin="5,0,5,4">
+                                    <TextBlock Text="Product List" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="txtProductInfoItem" Margin="10,0,0,0"
+                                               FontStyle="Italic" Foreground="Gray" VerticalAlignment="Center"/>
+                                </DockPanel>
+                                <DataGrid x:Name="dgProductList" MaxHeight="160" AutoGenerateColumns="False"
+                                          IsReadOnly="True" CanUserSortColumns="True" Margin="5,0,5,0"
+                                          SelectionMode="Extended"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                          HeadersVisibility="Column">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Database ID" Width="160" Binding="{Binding DatabaseId}"/>
+                                        <DataGridTextColumn Header="Name" Width="120" Binding="{Binding Name}"/>
+                                        <DataGridTextColumn Header="Dimensions" Width="*" Binding="{Binding DimValues}"/>
+                                        <DataGridCheckBoxColumn Header="Bought Out" Width="80" Binding="{Binding BoughtOut}"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <Separator Margin="5,6"/>
+                            </StackPanel>
+                            <!-- Bulk Assignment -->
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="250">
+                            <StackPanel x:Name="pnlBulkAssignment">
+                                <TextBlock Text="Bulk Assignment" FontWeight="Bold" Margin="5,0,0,5"/>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Price List" VerticalAlignment="Center" Margin="5"/><ComboBox x:Name="cmbBulkContentPriceList"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Installation Times" VerticalAlignment="Center" Margin="5"/><ComboBox x:Name="cmbBulkContentInstallTimes"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Fabrication Times" VerticalAlignment="Center" Margin="5"/><ComboBox x:Name="cmbBulkContentFabTimes"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Notes" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtBulkContentNotes"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Alias" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtBulkContentAlias"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Drawing Name" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtBulkContentDrawingName"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Order" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtBulkContentOrder"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Zone" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtBulkContentZone"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Equipment Tag" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtBulkContentEquipmentTag"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Pallet" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtBulkContentPallet"/></DockPanel>
+                                <DockPanel Margin="0,2"><TextBlock Width="140" Text="Spool Name" VerticalAlignment="Center" Margin="5"/><TextBox x:Name="txtBulkContentSpoolName"/></DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Width="140" Text="Bought Out" VerticalAlignment="Center" Margin="5"/>
+                                    <ComboBox x:Name="cmbBulkContentBoughtOut">
+                                        <ComboBoxItem Content="— No Change —" IsSelected="True"/>
+                                        <ComboBoxItem Content="Yes (Bought Out)"/>
+                                        <ComboBoxItem Content="No (Not Bought Out)"/>
+                                    </ComboBox>
+                                </DockPanel>
+                                <StackPanel Orientation="Horizontal" Margin="5,8,0,5">
+                                    <Button Content="Apply to Selected" Width="130" Height="24"
+                                            Click="btnApplyBulkContent_Click" x:Name="btnApplyBulkContent"/>
+                                </StackPanel>
+                            </StackPanel>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
         </TabItem>
         <TabItem x:Name="tbiSpecifications" Header="Specifications" Loaded="tbiSpecifications_Loaded">
             <Grid>
@@ -1118,6 +1480,122 @@
                     <ProgressBar x:Name="prgSpecifications" Height="20" Width="200" Margin="10,0,0,0" Minimum="0" Maximum="100" Value="0"/>
                     <Button x:Name="btnSaveSpecifications" Width="140" Height="24" Content="Save Specifications" Margin="10,0,0,0" Click="btnSaveSpecifications_Click"/>
                 </StackPanel>
+            </Grid>
+        </TabItem>
+
+        <TabItem x:Name="tbiDataHealth" Header="Data Health" Loaded="tbiDataHealth_Loaded"
+                 Height="24" VerticalAlignment="Top" Style="{StaticResource EnhancedTabItem}">
+            <Grid Margin="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header + Buttons -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                    <TextBlock Text="Database Validation" FontWeight="SemiBold" FontSize="14"
+                               VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DockPanel.Dock="Right">
+                        <Button x:Name="btnRunHealthChecks" Content="Run Checks" Width="100" Height="24"
+                                Click="btnRunHealthChecks_Click" Style="{StaticResource PrimaryButton}" Margin="0,0,5,0"/>
+                        <Button x:Name="btnExpandAllHealth" Content="Expand All" Width="90" Height="24"
+                                Click="btnExpandAllHealth_Click" IsEnabled="False" Margin="0,0,5,0"/>
+                        <Button x:Name="btnCollapseAllHealth" Content="Collapse All" Width="90" Height="24"
+                                Click="btnCollapseAllHealth_Click" IsEnabled="False" Margin="0,0,5,0"/>
+                        <Button x:Name="btnExportHealthReport" Content="Export CSV" Width="90" Height="24"
+                                Click="btnExportHealthReport_Click" IsEnabled="False"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Progress -->
+                <StackPanel Grid.Row="1" Margin="0,0,0,8">
+                    <ProgressBar x:Name="prgDataHealth" Height="18" Minimum="0" Maximum="100" Value="0"/>
+                    <TextBlock x:Name="txtDataHealthStatus" FontSize="11" Foreground="#666666" Margin="0,4,0,0"
+                               Text="Click 'Run Checks' to validate the database."/>
+                </StackPanel>
+
+                <!-- Results -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="icDataHealthGroups">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="3" Margin="0,0,0,6" Padding="6">
+                                    <StackPanel>
+                                        <!-- Category header (clickable to expand/collapse) -->
+                                        <StackPanel Orientation="Horizontal" Cursor="Hand"
+                                                    MouseLeftButtonUp="DataHealthCategory_Click">
+                                            <TextBlock Text="{Binding CategoryName}" FontWeight="SemiBold" FontSize="13"
+                                                       Foreground="#0696D7" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding Summary}" FontSize="11" Foreground="#888888"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <!-- Items list (collapsible) -->
+                                        <ItemsControl ItemsSource="{Binding Items}" Margin="10,4,0,0"
+                                                      Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVisConverter}}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                        <TextBlock Text="{Binding SeverityIcon}" Width="16" FontWeight="Bold"
+                                                                   VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Severity}" Value="Error">
+                                                                            <Setter Property="Foreground" Value="#D32F2F"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                                                                            <Setter Property="Foreground" Value="#F57C00"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Severity}" Value="Info">
+                                                                            <Setter Property="Foreground" Value="#1976D2"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                        <TextBlock Text="{Binding Message}" FontSize="11" Margin="4,0,8,0"
+                                                                   VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding Details}" FontSize="10" Foreground="#999999"
+                                                                   VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </TabItem>
+
+        <TabItem x:Name="tbiRelationships" Header="Relationships" Loaded="tbiRelationships_Loaded"
+                 Height="24" VerticalAlignment="Top" Style="{StaticResource EnhancedTabItem}">
+            <Grid Margin="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header + Refresh -->
+                <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                    <TextBlock Text="Database Relationships" FontWeight="SemiBold" FontSize="14"
+                               VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                    <Button x:Name="btnRefreshRelationships" Content="Refresh" Width="80" Height="24"
+                            Click="btnRefreshRelationships_Click" DockPanel.Dock="Right" HorizontalAlignment="Right"
+                            Style="{StaticResource PrimaryButton}"/>
+                </DockPanel>
+
+                <!-- Tree View -->
+                <TreeView x:Name="trvRelationships" Grid.Row="1" BorderThickness="1" BorderBrush="#D0D0D0"/>
+
+                <!-- Status -->
+                <TextBlock x:Name="txtRelationshipStatus" Grid.Row="2" FontSize="11" Foreground="#666666"
+                           Margin="0,4,0,0" Text="Click 'Refresh' to build the relationship tree."/>
             </Grid>
         </TabItem>
 
@@ -1457,6 +1935,10 @@
                     <Button x:Name="btnProfileCopy" Content="Copy Selected Data" Width="150"
                             Click="btnProfileCopy_Click" DockPanel.Dock="Right" HorizontalAlignment="Right"
                             Style="{StaticResource PrimaryButton}"/>
+                    <Button x:Name="btnProfileCompare" Content="Compare Profiles" Width="140"
+                            Click="btnProfileCompare_Click" DockPanel.Dock="Right" HorizontalAlignment="Right"
+                            Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                            ToolTip="Compare data between two profiles side-by-side"/>
                     <TextBlock Text="AutoCAD must be restarted after copying." FontSize="11" Foreground="#E65100"
                                VerticalAlignment="Center" TextWrapping="Wrap"/>
                 </DockPanel>

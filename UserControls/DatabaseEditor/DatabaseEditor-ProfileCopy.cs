@@ -1017,5 +1017,27 @@ namespace FabricationSample.UserControls.DatabaseEditor
             public string FilePath { get; set; }
             public string DisplayName { get; set; }
         }
+
+        private void btnProfileCompare_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_currentProfileDatabasePath))
+            {
+                MessageBox.Show("No active profile detected.", "Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var profiles = _profileDiscoveryService.GetAvailableProfiles(_currentProfileDatabasePath);
+            if (profiles == null || profiles.Count < 2)
+            {
+                MessageBox.Show("At least two profiles are needed to compare.", "Not Enough Profiles",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var compareWindow = new ProfileCompareWindow(profiles);
+            compareWindow.Owner = Window.GetWindow(this);
+            compareWindow.ShowDialog();
+        }
     }
 }
