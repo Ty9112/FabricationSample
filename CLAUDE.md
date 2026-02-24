@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FabricationSample is a .NET Framework 4.8 plugin for Autodesk AutoCAD 2024 with Fabrication CADmep integration. It provides a WPF UI for database management and export/import commands for fabrication data.
+FabricationSample is a .NET Framework 4.8 plugin for Autodesk AutoCAD 2024 with Fabrication CADmep integration. It provides a WPF UI for database management, export/import commands for fabrication data, and an HTTP bridge service for external tool integration.
 
 **Owner**: Tyler (tphillips@harriscompany.com)
+**Current Version**: v1.2.0
 
 ## Build
 
@@ -33,29 +34,48 @@ FabricationSample/
 ├── Commands/
 │   ├── ExportCommands.cs  # NETLOAD commands for CSV export
 │   └── ImportCommands.cs  # NETLOAD commands for data import
+├── Data/
+│   └── DataMapping.cs     # Data mapping utilities
 ├── Services/
-│   ├── Export/            # Export service implementations
+│   ├── Bridge/
+│   │   └── FabricationBridgeService.cs  # HTTP bridge at localhost:5050
+│   ├── Export/
 │   │   ├── IExportService.cs
 │   │   ├── CsvExportService.cs
 │   │   ├── ProductInfoExportService.cs
 │   │   ├── PriceTablesExportService.cs
 │   │   ├── InstallationTimesExportService.cs
 │   │   ├── ServiceTemplateDataExportService.cs
+│   │   ├── RevitBridgeExportService.cs  # Flat CSV for Dynamo/Power BI (v1.2.0)
 │   │   └── ...
 │   ├── Import/            # Import service implementations
 │   └── ItemSwap/          # Item swap with undo functionality
-│       ├── ItemSwapService.cs
-│       └── ItemSwapUndoManager.cs
 ├── Models/
 │   ├── ItemPropertySnapshot.cs
 │   └── ItemSwapUndoRecord.cs
-├── UserControls/          # WPF user controls
-│   ├── DatabaseEditor/    # Main database editing UI
+├── ProfileCopy/
+│   ├── Services/
+│   │   └── ProfileCompareService.cs     # MAP file diff (v1.2.0)
+│   └── Windows/
+│       └── ProfileCompareWindow.xaml    # Profile comparison UI (v1.2.0)
+├── UserControls/
+│   ├── DatabaseEditor/    # Main database editing UI (partial classes)
+│   │   ├── DatabaseEditor.xaml          # Tab container
+│   │   ├── DatabaseEditor-Job.cs        # Job items tab
+│   │   ├── DatabaseEditor-Services.cs   # Services tab
+│   │   ├── DatabaseEditor-ServiceTemplates.cs
+│   │   ├── DatabaseEditor-DataHealth.cs # Validation dashboard (v1.2.0)
+│   │   ├── DatabaseEditor-ManageContent.cs  # Content management (v1.2.0)
+│   │   ├── DatabaseEditor-Relationships.cs  # Relationship editor (v1.2.0)
+│   │   ├── DatabaseEditor-Search.cs     # Database search (v1.2.0)
+│   │   └── DatabaseEditor-Materials.cs
 │   ├── ServiceEditor/     # Service editing UI
-│   └── ...
+│   └── ItemFolders/       # Item folder browser
 ├── Utilities/
 │   └── CsvHelpers.cs
-└── Windows/               # Selection dialogs
+└── Windows/
+    ├── ConditionMappingWindow.xaml   # Condition mapping dialog (v1.2.0)
+    └── TemplateComposerWindow.xaml   # Template composer (v1.2.0)
 ```
 
 ## AutoCAD Commands
@@ -72,6 +92,28 @@ FabricationSample/
 | `GetServiceTemplateData` | Export service template data with selection dialog |
 | `ImportProductList` | Import product list from CSV |
 | `ImportPriceList` | Import price list from CSV |
+
+## FabricationBridgeService (localhost:5050)
+
+The bridge exposes Fabrication database data over HTTP for external tools:
+
+```
+GET /api/products?search=...     # Search products
+GET /api/products/{id}           # Product detail (by DatabaseId)
+GET /api/products/{id}/image     # Product image
+GET /api/services                # All services
+GET /api/pricelists              # Price lists + breakpoint tables
+GET /api/installtimes            # Installation times tables
+GET /api/jobitems                # Items in current job
+```
+
+**Consumers**:
+- XbimWebUI (Harris 3D Viewer) — product detail, images, pricing
+- fabrication-mcp MCP server — wraps as 15 live MCP tools
+
+**Key fix (v1.2.0)**: All 6 static ID-keyed dictionaries use `StringComparer.OrdinalIgnoreCase`
+to handle mixed-case product IDs (e.g., `MDSK_NIB_000142-0001`) correctly with
+`ToLowerInvariant()` URL routing.
 
 ## Key Patterns
 
@@ -98,6 +140,11 @@ DBOperationResult result = table.GetValue(columnIndex, rowIndex);
 if (result.Status == ResultStatus.Succeeded)
     value = (double)result.ReturnObject;
 ```
+
+### DatabaseEditor Partial Classes
+The DatabaseEditor uses partial classes to split tab functionality across files.
+Each `DatabaseEditor-*.cs` file adds methods for one tab. The XAML container is
+`DatabaseEditor.xaml`. Add new tabs by creating a new partial class file.
 
 ## Version Control & Release Policy
 
@@ -128,7 +175,16 @@ After a significant batch of commits (roughly 10+ commits or major feature compl
 
 `master` - main public branch
 
+## TODOs
+
+- `ImportCommands.cs:246` — Re-enable product list import when API type issues are resolved
+- `ImportCommands.cs:381` — Implement price list selection dialog
+- `DatabaseEditor-Materials.cs:110` — Consider material usage cloner
+- `ItemFoldersView.xaml.cs:91` — Handle adding new folders
+
 ## Related Projects
 
 - `DiscordCADmep` - Simpler AutoCAD plugin with similar export commands (same repo parent)
 - `fabrication-api-xmldocs` - API documentation extracted from FabricationAPI.chm
+- `XbimWebUI` (Harris 3D Viewer) - Consumes bridge endpoints for product visualization
+- `fabrication-mcp` - MCP server wrapping bridge + CSV exports as 25 tools
