@@ -193,95 +193,152 @@ namespace FabricationSample.Services.Bridge
                 });
 
                 // Phase 3: Service items + product-listed scan  (mirrors ItemDataExportService)
+                // Two-pass strategy:
+                //   Pass 1 — Enumerate templates (via Database.ServiceTemplates) and cache
+                //            processed button/item data per template name. This is the expensive
+                //            pass (ContentManager.LoadItem for each button item).
+                //   Pass 2 — Iterate FabDB.Services and clone cached template items with each
+                //            service's name. Cheap pass (Dict copy only).
+                // This fixes the issue where most services returned null for
+                // ServiceTemplate.ServiceTabs when accessed through the Service object.
                 WriteMessage("[FabBridge] Phase 3: Service items and product lists...");
                 var productListedNew  = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var serviceItemsNew   = new List<Dict>();
                 var productImageMapNew = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // product_id → first PNG path found
+
+                // Pass 1: Build template cache — templateName → List<Dict>
+                var templateItemCache = new Dictionary<string, List<Dict>>(StringComparer.OrdinalIgnoreCase);
                 SafeRead(() =>
                 {
-                    foreach (var svc in FabDB.Services)
+                    // Primary source: Database.ServiceTemplates (direct template enumeration)
+                    IEnumerable<ServiceTemplate> templates = null;
+                    try { templates = FabDB.ServiceTemplates?.ToList(); }
+                    catch { templates = null; }
+
+                    // Fallback: extract unique templates from services
+                    if (templates == null || !templates.Any())
                     {
-                        string svcName = svc.Name ?? "";
-                        var tmpl = svc.ServiceTemplate;
-                        if (tmpl?.ServiceTabs == null) continue;
-                        string tmplName = tmpl.Name ?? "";
-
-                        foreach (var tab in tmpl.ServiceTabs)
+                        WriteMessage("[FabBridge] Phase 3: ServiceTemplates unavailable, falling back to per-service templates.");
+                        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        var fromSvc = new List<ServiceTemplate>();
+                        foreach (var svc in FabDB.Services)
                         {
-                            if (tab.ServiceButtons == null) continue;
-                            foreach (var btn in tab.ServiceButtons)
+                            try
                             {
-                                string btnName = btn.Name ?? "";
-                                if (btn.ServiceButtonItems == null) continue;
-                                foreach (var sbItem in btn.ServiceButtonItems)
+                                var t = svc.ServiceTemplate;
+                                if (t == null) continue;
+                                string n = t.Name ?? "";
+                                if (!string.IsNullOrEmpty(n) && seen.Add(n))
+                                    fromSvc.Add(t);
+                            }
+                            catch { }
+                        }
+                        templates = fromSvc;
+                    }
+
+                    int tmplCount = 0;
+                    foreach (var tmpl in templates)
+                    {
+                        try
+                        {
+                            string tmplName = FixEncoding(tmpl.Name ?? "");
+                            if (string.IsNullOrEmpty(tmplName) || templateItemCache.ContainsKey(tmplName)) continue;
+                            if (tmpl.ServiceTabs == null) continue;
+
+                            var tmplItems = new List<Dict>();
+                            foreach (var tab in tmpl.ServiceTabs)
+                            {
+                                if (tab.ServiceButtons == null) continue;
+                                foreach (var btn in tab.ServiceButtons)
                                 {
-                                    try
+                                    string btnName = btn.Name ?? "";
+                                    if (btn.ServiceButtonItems == null) continue;
+                                    foreach (var sbItem in btn.ServiceButtonItems)
                                     {
-                                        var item     = ContentManager.LoadItem(sbItem.ItemPath);
-                                        string itemPath = item?.FilePath ?? "";
-
-                                        // Image source priority:
-                                        // 1. Fabrication API Item.ImagePath property
-                                        // 2. PNG file with same name alongside the .ITM file
-                                        // 3. ServiceButton.GetButtonImageFilename()
-                                        string imagePath = "";
                                         try
                                         {
-                                            if (item != null && !string.IsNullOrEmpty(item.ImagePath)
-                                                && File.Exists(item.ImagePath))
-                                                imagePath = item.ImagePath;
-                                        }
-                                        catch { }
+                                            var item     = ContentManager.LoadItem(sbItem.ItemPath);
+                                            string itemPath = item?.FilePath ?? "";
 
-                                        if (string.IsNullOrEmpty(imagePath) && !string.IsNullOrEmpty(itemPath))
-                                        {
-                                            string png = Path.ChangeExtension(itemPath, ".png");
-                                            if (!File.Exists(png)) png = Path.ChangeExtension(itemPath, ".PNG");
-                                            if (File.Exists(png)) imagePath = png;
-                                        }
-
-                                        // Service button image (button-level, not item-level)
-                                        string buttonImagePath = "";
-                                        try
-                                        {
-                                            string btnImg = btn.GetButtonImageFilename();
-                                            if (!string.IsNullOrEmpty(btnImg) && File.Exists(btnImg))
-                                                buttonImagePath = btnImg;
-                                        }
-                                        catch { }
-
-                                        // Fall back to button image if no item image found
-                                        if (string.IsNullOrEmpty(imagePath) && !string.IsNullOrEmpty(buttonImagePath))
-                                            imagePath = buttonImagePath;
-
-                                        var cond     = sbItem.ServiceTemplateCondition;
-                                        string condDesc = cond?.Description ?? "";
-                                        string gt    = cond != null ? (cond.GreaterThan > -1      ? cond.GreaterThan.ToString()      : "Unrestricted") : "N/A";
-                                        string condId = cond != null ? cond.Id.ToString() : "N/A";
-                                        string lte   = cond != null ? (cond.LessThanEqualTo > -1  ? cond.LessThanEqualTo.ToString()  : "Unrestricted") : "N/A";
-
-                                        if (item?.ProductList?.Rows != null)
-                                        {
-                                            foreach (var row in item.ProductList.Rows)
+                                            // Image source priority:
+                                            // 1. Fabrication API Item.ImagePath property
+                                            // 2. PNG file with same name alongside the .ITM file
+                                            // 3. ServiceButton.GetButtonImageFilename()
+                                            string imagePath = "";
+                                            try
                                             {
-                                                string entryName = "";
-                                                try { entryName = row.Name ?? ""; } catch { }
-                                                if (!string.IsNullOrEmpty(entryName))
+                                                if (item != null && !string.IsNullOrEmpty(item.ImagePath)
+                                                    && File.Exists(item.ImagePath))
+                                                    imagePath = item.ImagePath;
+                                            }
+                                            catch { }
+
+                                            if (string.IsNullOrEmpty(imagePath) && !string.IsNullOrEmpty(itemPath))
+                                            {
+                                                string png = Path.ChangeExtension(itemPath, ".png");
+                                                if (!File.Exists(png)) png = Path.ChangeExtension(itemPath, ".PNG");
+                                                if (File.Exists(png)) imagePath = png;
+                                            }
+
+                                            // Service button image (button-level, not item-level)
+                                            string buttonImagePath = "";
+                                            try
+                                            {
+                                                string btnImg = btn.GetButtonImageFilename();
+                                                if (!string.IsNullOrEmpty(btnImg) && File.Exists(btnImg))
+                                                    buttonImagePath = btnImg;
+                                            }
+                                            catch { }
+
+                                            // Fall back to button image if no item image found
+                                            if (string.IsNullOrEmpty(imagePath) && !string.IsNullOrEmpty(buttonImagePath))
+                                                imagePath = buttonImagePath;
+
+                                            var cond     = sbItem.ServiceTemplateCondition;
+                                            string condDesc = cond?.Description ?? "";
+                                            string gt    = cond != null ? (cond.GreaterThan > -1      ? cond.GreaterThan.ToString()      : "Unrestricted") : "N/A";
+                                            string condId = cond != null ? cond.Id.ToString() : "N/A";
+                                            string lte   = cond != null ? (cond.LessThanEqualTo > -1  ? cond.LessThanEqualTo.ToString()  : "Unrestricted") : "N/A";
+
+                                            if (item?.ProductList?.Rows != null)
+                                            {
+                                                foreach (var row in item.ProductList.Rows)
                                                 {
-                                                    productListedNew.Add(entryName);
-                                                    // Map product ID → image path (keep first found)
-                                                    if (!string.IsNullOrEmpty(imagePath) && !productImageMapNew.ContainsKey(entryName))
-                                                        productImageMapNew[entryName] = imagePath;
+                                                    string entryName = "";
+                                                    try { entryName = row.Name ?? ""; } catch { }
+                                                    if (!string.IsNullOrEmpty(entryName))
+                                                    {
+                                                        productListedNew.Add(entryName);
+                                                        if (!string.IsNullOrEmpty(imagePath) && !productImageMapNew.ContainsKey(entryName))
+                                                            productImageMapNew[entryName] = imagePath;
+                                                    }
+                                                    tmplItems.Add(new Dict
+                                                    {
+                                                        ["service_name"]   = "",
+                                                        ["template_name"]  = tmplName,
+                                                        ["button_name"]    = btnName,
+                                                        ["item_path"]      = itemPath,
+                                                        ["image_path"]     = imagePath,
+                                                        ["button_image"]   = buttonImagePath,
+                                                        ["entry_name"]     = entryName,
+                                                        ["condition_desc"] = condDesc,
+                                                        ["greater_than"]   = gt,
+                                                        ["condition_id"]   = condId,
+                                                        ["less_than_eq"]   = lte,
+                                                    });
                                                 }
-                                                serviceItemsNew.Add(new Dict
+                                            }
+                                            else
+                                            {
+                                                tmplItems.Add(new Dict
                                                 {
-                                                    ["service_name"]   = svcName,
+                                                    ["service_name"]   = "",
                                                     ["template_name"]  = tmplName,
                                                     ["button_name"]    = btnName,
                                                     ["item_path"]      = itemPath,
                                                     ["image_path"]     = imagePath,
                                                     ["button_image"]   = buttonImagePath,
-                                                    ["entry_name"]     = entryName,
+                                                    ["entry_name"]     = "",
                                                     ["condition_desc"] = condDesc,
                                                     ["greater_than"]   = gt,
                                                     ["condition_id"]   = condId,
@@ -289,29 +346,47 @@ namespace FabricationSample.Services.Bridge
                                                 });
                                             }
                                         }
-                                        else
-                                        {
-                                            serviceItemsNew.Add(new Dict
-                                            {
-                                                ["service_name"]   = svcName,
-                                                ["template_name"]  = tmplName,
-                                                ["button_name"]    = btnName,
-                                                ["item_path"]      = itemPath,
-                                                ["image_path"]     = imagePath,
-                                                ["button_image"]   = buttonImagePath,
-                                                ["entry_name"]     = "",
-                                                ["condition_desc"] = condDesc,
-                                                ["greater_than"]   = gt,
-                                                ["condition_id"]   = condId,
-                                                ["less_than_eq"]   = lte,
-                                            });
-                                        }
+                                        catch { }
                                     }
-                                    catch { }
                                 }
                             }
+
+                            if (tmplItems.Count > 0)
+                            {
+                                templateItemCache[tmplName] = tmplItems;
+                                tmplCount++;
+                            }
                         }
+                        catch { }
                     }
+                    WriteMessage($"[FabBridge] Phase 3a: Cached {tmplCount} templates ({templateItemCache.Values.Sum(l => l.Count):N0} item rows).");
+                });
+
+                // Pass 2: Map services → cached template items
+                SafeRead(() =>
+                {
+                    int mappedServices = 0;
+                    foreach (var svc in FabDB.Services)
+                    {
+                        try
+                        {
+                            string svcName = FixEncoding(svc.Name ?? "");
+                            string tmplName = FixEncoding(svc.ServiceTemplate?.Name ?? "");
+                            if (string.IsNullOrEmpty(tmplName)) continue;
+
+                            if (!templateItemCache.TryGetValue(tmplName, out var tmplItems)) continue;
+
+                            foreach (var tmplItem in tmplItems)
+                            {
+                                var clone = new Dict(tmplItem);
+                                clone["service_name"] = svcName;
+                                serviceItemsNew.Add(clone);
+                            }
+                            mappedServices++;
+                        }
+                        catch { }
+                    }
+                    WriteMessage($"[FabBridge] Phase 3b: Mapped {mappedServices} services → {serviceItemsNew.Count:N0} service item rows.");
                 });
 
                 // Phase 4: All products with supplier IDs + is_product_listed + product index
@@ -905,7 +980,7 @@ namespace FabricationSample.Services.Bridge
             SafeRead(() =>
             {
                 foreach (var svc in FabDB.Services)
-                    results.Add(new Dict { ["name"] = svc.Name ?? "", ["template"] = svc.ServiceTemplate?.Name ?? "" });
+                    results.Add(new Dict { ["name"] = FixEncoding(svc.Name ?? ""), ["template"] = FixEncoding(svc.ServiceTemplate?.Name ?? "") });
             });
             return Serialize(results);
         }
@@ -1805,6 +1880,26 @@ namespace FabricationSample.Services.Bridge
         private static string Esc(string s) =>
             (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"")
                      .Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
+
+        /// <summary>
+        /// Fix UTF-8 → Windows-1252 mojibake in Fabrication API strings.
+        /// Uses explicit replacements for known mojibake sequences.
+        /// </summary>
+        private static string FixEncoding(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            // Common UTF-8 → Windows-1252 mojibake patterns:
+            // Each 3-char sequence is a single Unicode char whose UTF-8 bytes
+            // were misinterpreted as Windows-1252.
+            return s
+                .Replace("\u00e2\u20ac\u201c", "\u2013")   // en dash –
+                .Replace("\u00e2\u20ac\u201d", "\u2014")   // em dash —
+                .Replace("\u00e2\u20ac\u2122", "\u2019")   // right single quote '
+                .Replace("\u00e2\u20ac\u02dc", "\u02dc")   // small tilde ˜
+                .Replace("\u00e2\u20ac\u0153", "\u201c")   // left double quote "
+                .Replace("\u00e2\u20ac\u00a2", "\u2022")   // bullet •
+                .Replace("\u00c2\u00b0", "\u00b0");        // degree °
+        }
 
         private static string Serialize(object val)
         {
