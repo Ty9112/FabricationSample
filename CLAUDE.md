@@ -212,11 +212,15 @@ After a significant batch of commits (roughly 10+ commits or major feature compl
 - `ImportCommands.cs:246` — Re-enable product list import when API type issues are resolved
 - `ImportCommands.cs:381` — Implement price list selection dialog
 - `DatabaseEditor-Materials.cs:110` — Consider material usage cloner
-- `ItemFoldersView.xaml.cs:91` — Handle adding new folders
+
+### Recently Resolved
+- ~~`ItemFoldersView.xaml.cs:91` — Handle adding new folders~~ (Feb 2026 — folder creation with icon + lazy-load child)
+- ~~`SupplierIdsConverter.cs:63` — ConvertBack threw NotImplementedException~~ (Feb 2026 — returns Binding.DoNothing)
+- ~~Convert.ToDouble crash risk (8 locations)~~ (Feb 2026 — replaced with double.TryParse in 4 files)
 
 ## Related Projects
 
 - `DiscordCADmep` - Simpler AutoCAD plugin with similar export commands (same repo parent)
 - `fabrication-api-xmldocs` - API documentation extracted from FabricationAPI.chm
 - `XbimWebUI` (Harris 3D Viewer) - Consumes bridge endpoints for product visualization
-- `fabrication-mcp` - MCP server wrapping bridge + CSV exports as 28 tools (13 CSV + 15 live bridge)
+- `fabrication-mcp` - MCP server wrapping bridge + CSV exports as 33 tools (14 CSV + 15 live bridge + 4 estimate)
