@@ -769,6 +769,33 @@ namespace FabricationSample.Services.Bridge
                 }
                 catch { }
             });
+
+            // Product-level counts from cache (N/A-aware — N/A is never a valid value)
+            int productsWithCost    = 0;
+            int productsWithLabor   = 0;
+            int productsWithHarrison = 0;
+            if (_cacheReady)
+            {
+                productsWithCost = _priceCache.Count;   // unique products with price entries
+                productsWithLabor = _installCache.Count; // unique products with install entries
+                foreach (var pd in _allProductsList)
+                {
+                    if (pd.TryGetValue("supplier_ids", out var sObj) && sObj is Dict sids)
+                    {
+                        foreach (var kv in sids)
+                        {
+                            if (kv.Key.IndexOf("Harrison", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                string hv = kv.Value?.ToString() ?? "";
+                                if (hv.Length > 0 && !hv.Equals("N/A", StringComparison.OrdinalIgnoreCase))
+                                    productsWithHarrison++;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             return Serialize(new Dict
             {
                 ["status"]               = "ok",
@@ -784,6 +811,9 @@ namespace FabricationSample.Services.Bridge
                 ["cache_ready"]          = _cacheReady,
                 ["cache_building"]       = _cacheBuilding,
                 ["cache_product_count"]  = _allProductsList.Count,
+                ["products_with_cost"]    = productsWithCost,
+                ["products_with_labor"]   = productsWithLabor,
+                ["products_with_harrison"]= productsWithHarrison,
                 ["image_count"]          = _productImageMap.Count,
                 ["price_entries_count"]  = _priceEntriesList.Count,
                 ["install_entries_count"]= _installEntriesList.Count,
@@ -815,10 +845,10 @@ namespace FabricationSample.Services.Bridge
                 ["cache_error"]          = _cacheError ?? "",
                 ["product_count"]        = total,
                 ["service_items_count"]  = _serviceItemsList.Count,
-                ["priced_count"]         = priced,
-                ["priced_pct"]           = total > 0 ? Math.Round(priced * 100.0 / total, 1) : 0.0,
-                ["timed_count"]          = timed,
-                ["timed_pct"]            = total > 0 ? Math.Round(timed  * 100.0 / total, 1) : 0.0,
+                ["products_with_cost"]   = priced,
+                ["products_with_cost_pct"] = total > 0 ? Math.Round(priced * 100.0 / total, 1) : 0.0,
+                ["products_with_labor"]  = timed,
+                ["products_with_labor_pct"] = total > 0 ? Math.Round(timed  * 100.0 / total, 1) : 0.0,
                 ["product_listed_count"] = _productListedIds.Count,
                 ["price_entries_count"]   = _priceEntriesList.Count,
                 ["install_entries_count"] = _installEntriesList.Count,
