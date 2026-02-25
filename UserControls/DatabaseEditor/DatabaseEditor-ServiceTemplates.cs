@@ -260,14 +260,14 @@ namespace FabricationSample.UserControls.DatabaseEditor
             double lessThan = 0;
             if (item.LessThanOrEqual.Equals("Unrestricted"))
                 lessThan = -1;
-            else
-                lessThan = Convert.ToDouble(item.LessThanOrEqual);
+            else if (!double.TryParse(item.LessThanOrEqual, out lessThan))
+                return;
 
             double greaterThan = 0;
             if (item.GreaterThan.Equals("Unrestricted"))
                 greaterThan = -1;
-            else
-                greaterThan = Convert.ToDouble(item.GreaterThan);
+            else if (!double.TryParse(item.GreaterThan, out greaterThan))
+                return;
 
             if (lessThan != item.Condition.LessThanEqualTo || greaterThan != item.Condition.GreaterThan)
             {
@@ -303,8 +303,9 @@ namespace FabricationSample.UserControls.DatabaseEditor
             if (FabricationManager.CurrentServiceTemplate == null)
                 return;
 
-            double greaterThanValue = Convert.ToDouble(greaterThan);
-            double lessThanValue = Convert.ToDouble(lessThan);
+            if (!double.TryParse(greaterThan, out double greaterThanValue) ||
+                !double.TryParse(lessThan, out double lessThanValue))
+                return;
 
             var condition = FabricationAPIExamples.AddNewServiceTemplateCondition(FabricationManager.CurrentServiceTemplate, description, greaterThanValue, lessThanValue);
             if (condition != null)

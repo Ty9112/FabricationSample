@@ -178,7 +178,10 @@ namespace FabricationSample
       else
       {
         if (!String.IsNullOrWhiteSpace(txtLessThan.Text))
-          newLessThan = Convert.ToDouble(txtLessThan.Text);
+        {
+          if (!double.TryParse(txtLessThan.Text, out newLessThan))
+            return;
+        }
         else
           newLessThan = currentLessThan;
       }
@@ -188,7 +191,10 @@ namespace FabricationSample
       else
       {
         if (!String.IsNullOrWhiteSpace(txtGreaterThan.Text))
-          newGreaterThan = Convert.ToDouble(txtGreaterThan.Text);
+        {
+          if (!double.TryParse(txtGreaterThan.Text, out newGreaterThan))
+            return;
+        }
         else
           newGreaterThan = currentGreaterThan;
       }

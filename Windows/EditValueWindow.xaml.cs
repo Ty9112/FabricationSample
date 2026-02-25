@@ -67,8 +67,9 @@ namespace FabricationSample
 
     private void btnOk_Click(object sender, RoutedEventArgs e)
     {
-      _value = Convert.ToDouble(txtValue.Text);
-      
+      if (double.TryParse(txtValue.Text, out double parsed))
+        _value = parsed;
+
       this.Close();
     }
 

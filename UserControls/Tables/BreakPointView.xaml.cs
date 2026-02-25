@@ -103,11 +103,10 @@ namespace FabricationSample.UserControls
         {
             TextBox tb = e.EditingElement as TextBox;
 
-            if ((tb != null) && tb.Text != "")
+            if ((tb != null) && tb.Text != "" && double.TryParse(tb.Text, out double value))
             {
                 int col = e.Column.DisplayIndex;
                 int row = e.Row.GetIndex();
-                double value = Convert.ToDouble(tb.Text);
 
                 if (value != FabricationAPIExamples.GetBreakPointValue(_bpTable, col, row))
                     FabricationAPIExamples.SetBreakPointValue(_bpTable, col, row, value);
