@@ -88,7 +88,10 @@ namespace FabricationSample.UserControls
             }
             else if (nodeType == TreeViewNodeType.folder)
             {
-                //TODO: Handle adding new folders
+                string folderName = Path.GetFileName(path.TrimEnd('\\', '/'));
+                TreeViewItem subItem = GetTreeViewItem(TreeViewNodeType.folder, folderName, path);
+                subItem.Items.Add("Loading...");
+                parentItem.Items.Add(subItem);
             }
         }
 
