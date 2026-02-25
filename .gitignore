@@ -3,11 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-# Build output DLL — never commit this directly.
-# Official releases are published via GitHub Releases only.
-# Internal/MCP builds must not leak into the public repo.
-Compiled/FabricationSample.dll
-Compiled/FabricationSample.pdb
+# Build archive — internal builds stay local, public releases go to GitHub Releases.
+# The entire Compiled/ folder is gitignored.
+Compiled/
 
 # User-specific files
 *.rsuser

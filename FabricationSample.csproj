@@ -696,11 +696,19 @@
     </PostBuildEvent>
   </PropertyGroup>
   <Import Project="$(XamlSpyInstallPath)MSBuild\FirstFloor.XamlSpy.WPF.targets" Condition="'$(XamlSpyInstallPath)' != '' and '$(Configuration)' == 'DEBUG'" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
+  <!-- Archive each Release build with version + timestamp.
+       Runs after compile, copies from obj/ (never locked by AutoCAD).
+       Uses _CopyFilesToOutputDirectory as trigger — runs just before the
+       bin/ copy that AutoCAD may block, ensuring we archive first. -->
+  <Target Name="ArchiveBuild" BeforeTargets="CopyFilesToOutputDirectory" Condition="'$(Configuration)' == 'Release'">
+    <PropertyGroup>
+      <ArchiveDir>$(MSBuildProjectDirectory)\Compiled\internal\</ArchiveDir>
+      <Timestamp>$([System.DateTime]::Now.ToString('yyyyMMdd-HHmm'))</Timestamp>
+      <ArchiveName>FabricationSample_$(Timestamp).dll</ArchiveName>
+      <ObjDll>$(MSBuildProjectDirectory)\$(IntermediateOutputPath)$(TargetFileName)</ObjDll>
+    </PropertyGroup>
+    <MakeDir Directories="$(ArchiveDir)" Condition="!Exists('$(ArchiveDir)')" />
+    <Copy SourceFiles="$(ObjDll)" DestinationFiles="$(ArchiveDir)$(ArchiveName)" Condition="Exists('$(ObjDll)')" />
+    <Message Text="Archived build: Compiled\internal\$(ArchiveName)" Importance="high" />
   </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>
