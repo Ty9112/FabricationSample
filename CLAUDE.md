@@ -109,6 +109,13 @@ The `GetProductInfo` CSV export produces ~236K rows, but **not all rows are real
 
 The CSV also has **3 duplicate "Id" columns** — use positional indexing (`csv.reader`), not `DictReader`.
 
+### N/A Values — CRITICAL Rule
+
+**`N/A` is the Fabrication database's default empty/null placeholder, NOT a valid value.**
+Always treat `N/A` as empty/null/0 when counting, filtering, or aggregating ANY field
+(Harrison codes, discount codes, Ferguson codes, sizes, specifications, status — everything).
+Never count items with `N/A` as "having" a value assigned.
+
 ## FabricationBridgeService (localhost:5050)
 
 The bridge exposes Fabrication database data over HTTP for external tools:
@@ -131,13 +138,14 @@ GET /api/jobitems                # Items in current job
 to handle mixed-case product IDs (e.g., `MDSK_NIB_000142-0001`) correctly with
 `ToLowerInvariant()` URL routing.
 
-**Database identity fields** (added for multi-model hub):
-`GET /api/status` and `GET /api/cache/status` now include:
+**Database identity fields** (multi-model hub support):
+`GET /api/status` and `GET /api/cache/status` include:
 - `database_path` — full filesystem path to active Fabrication database
 - `database_name` — folder name only (e.g., `Harris Wetside Database 2_0`)
 - `profile_name` — AutoCAD profile name (from `Application.CurrentProfile`)
 
-These let the MCP server and viewer know which database the bridge is serving.
+These are consumed by the fabrication-mcp hub system (`get_active_profile`, `get_database_summary`)
+and the XbimWebUI hub landing page to identify which database the bridge is serving.
 
 ## Key Patterns
 
@@ -211,4 +219,4 @@ After a significant batch of commits (roughly 10+ commits or major feature compl
 - `DiscordCADmep` - Simpler AutoCAD plugin with similar export commands (same repo parent)
 - `fabrication-api-xmldocs` - API documentation extracted from FabricationAPI.chm
 - `XbimWebUI` (Harris 3D Viewer) - Consumes bridge endpoints for product visualization
-- `fabrication-mcp` - MCP server wrapping bridge + CSV exports as 25 tools
+- `fabrication-mcp` - MCP server wrapping bridge + CSV exports as 28 tools (13 CSV + 15 live bridge)
