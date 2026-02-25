@@ -43,6 +43,7 @@ namespace FabricationSample.Services.Bridge
     ///   GET  /api/job/items?service=&status=&section=&limit=&offset= — placed job items
     ///   GET  /api/job/items/{uniqueId}            — single job item detail
     ///   PUT  /api/products/{id}/supplier-ids      — update supplier IDs (JSON body)
+    ///   POST /api/products/harrison-codes/import  — bulk Harrison code import (TSV body)
     /// </summary>
     public class FabricationBridgeService : IDisposable
     {
@@ -717,6 +718,9 @@ namespace FabricationSample.Services.Bridge
                 // POST /api/cache/export — trigger ProductInfo CSV export
                 else if (method == "POST" && path == "/api/cache/export")
                     json = HandleCacheExport(ReadBody(req));
+                // POST /api/products/harrison-codes/import — bulk Harrison code import
+                else if (method == "POST" && path == "/api/products/harrison-codes/import")
+                    json = HandleHarrisonImport(ReadBody(req));
                 else { status = 404; json = JsonError("endpoint not found"); }
 
                 byte[] body = Encoding.UTF8.GetBytes(json);
@@ -748,17 +752,30 @@ namespace FabricationSample.Services.Bridge
             int  serviceCount       = 0;
             int  supplierGroupCount = 0;
             bool dbLoaded           = false;
+            string databasePath     = "";
+            string databaseName     = "";
+            string profileName      = "";
             SafeRead(() =>
             {
                 productCount       = ProductDatabase.ProductDefinitions.Count();
                 serviceCount       = FabDB.Services.Count();
                 supplierGroupCount = FabDB.SupplierGroups.Count();
                 dbLoaded           = true;
+                try
+                {
+                    databasePath = Autodesk.Fabrication.ApplicationServices.Application.DatabasePath ?? "";
+                    databaseName = string.IsNullOrEmpty(databasePath) ? "" : System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(databasePath.TrimEnd('\\', '/')));
+                    profileName  = Autodesk.Fabrication.ApplicationServices.Application.CurrentProfile ?? "";
+                }
+                catch { }
             });
             return Serialize(new Dict
             {
                 ["status"]               = "ok",
                 ["db_loaded"]            = dbLoaded,
+                ["database_path"]        = databasePath,
+                ["database_name"]        = databaseName,
+                ["profile_name"]         = profileName,
                 ["product_count"]        = productCount,
                 ["service_count"]        = serviceCount,
                 ["supplier_group_count"] = supplierGroupCount,
@@ -778,8 +795,21 @@ namespace FabricationSample.Services.Bridge
             int total  = _allProductsList.Count;
             int priced = _priceCache.Count;
             int timed  = _installCache.Count;
+            string databasePath = "";
+            string databaseName = "";
+            SafeRead(() =>
+            {
+                try
+                {
+                    databasePath = Autodesk.Fabrication.ApplicationServices.Application.DatabasePath ?? "";
+                    databaseName = string.IsNullOrEmpty(databasePath) ? "" : System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(databasePath.TrimEnd('\\', '/')));
+                }
+                catch { }
+            });
             return Serialize(new Dict
             {
+                ["database_path"]        = databasePath,
+                ["database_name"]        = databaseName,
                 ["cache_ready"]          = _cacheReady,
                 ["cache_building"]       = _cacheBuilding,
                 ["cache_error"]          = _cacheError ?? "",
@@ -1538,6 +1568,110 @@ namespace FabricationSample.Services.Bridge
 
             if (error != null) return JsonError(error);
             return Serialize(new Dict { ["success"] = true, ["product_id"] = productId });
+        }
+
+        // ── POST /api/products/harrison-codes/import ─────────────────────────────
+
+        /// <summary>
+        /// Bulk import Harrison codes for products.
+        /// Body: TSV lines — product_id\tharrison_code (one per line).
+        /// First line may be a header (pi_id/harrison_code) and is skipped.
+        /// Returns summary with updated/not_found/error counts.
+        /// </summary>
+        private string HandleHarrisonImport(string body)
+        {
+            if (string.IsNullOrWhiteSpace(body))
+                return JsonError("empty body — send TSV lines: product_id\\tharrison_code");
+
+            var lines = body.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            if (lines.Length == 0)
+                return JsonError("no data lines");
+
+            // Skip header line if present
+            int startIdx = 0;
+            if (lines[0].Contains("pi_id") || lines[0].Contains("harrison_code")
+                || lines[0].Contains("product_id"))
+                startIdx = 1;
+
+            int updated = 0, notFound = 0, noSupplier = 0, skipped = 0, errors = 0;
+            var notFoundIds = new List<string>();
+            var errorDetails = new List<string>();
+
+            SafeRead(() =>
+            {
+                // Build a quick index for O(1) lookups
+                var pdIndex = new Dictionary<string, ProductDefinition>(StringComparer.OrdinalIgnoreCase);
+                foreach (var pd in ProductDatabase.ProductDefinitions)
+                {
+                    if (!string.IsNullOrEmpty(pd.Id))
+                        pdIndex[pd.Id] = pd;
+                }
+
+                for (int i = startIdx; i < lines.Length; i++)
+                {
+                    var parts = lines[i].Split('\t');
+                    if (parts.Length < 2) { skipped++; continue; }
+
+                    string productId    = parts[0].Trim();
+                    string harrisonCode = parts[1].Trim();
+
+                    if (string.IsNullOrEmpty(productId) || string.IsNullOrEmpty(harrisonCode))
+                    { skipped++; continue; }
+
+                    try
+                    {
+                        if (!pdIndex.TryGetValue(productId, out var pd))
+                        {
+                            notFound++;
+                            if (notFoundIds.Count < 20) notFoundIds.Add(productId);
+                            continue;
+                        }
+
+                        var sid = pd.SupplierIds.FirstOrDefault(s =>
+                            (s.ProductSupplier?.Name ?? "")
+                            .Equals("Harrison", StringComparison.OrdinalIgnoreCase));
+
+                        if (sid != null)
+                        {
+                            sid.Id = harrisonCode;
+                            updated++;
+                        }
+                        else
+                        {
+                            noSupplier++;
+                            if (errorDetails.Count < 10)
+                                errorDetails.Add("No Harrison supplier slot: " + productId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        errors++;
+                        if (errorDetails.Count < 10)
+                            errorDetails.Add(productId + ": " + ex.Message);
+                    }
+                }
+            });
+
+            int total = lines.Length - startIdx;
+            WriteMessage($"[FabBridge] Harrison import: {updated} updated, {notFound} not found, "
+                       + $"{noSupplier} no supplier slot, {errors} errors, {skipped} skipped (of {total})");
+
+            var result = new Dict
+            {
+                ["success"]     = updated > 0,
+                ["total"]       = total,
+                ["updated"]     = updated,
+                ["not_found"]   = notFound,
+                ["no_supplier"] = noSupplier,
+                ["skipped"]     = skipped,
+                ["errors"]      = errors,
+            };
+            if (notFoundIds.Count > 0)
+                result["not_found_sample"] = string.Join(", ", notFoundIds);
+            if (errorDetails.Count > 0)
+                result["error_sample"] = string.Join("; ", errorDetails);
+
+            return Serialize(result);
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────────

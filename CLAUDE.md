@@ -83,7 +83,7 @@ FabricationSample/
 | Command | Description |
 |---------|-------------|
 | `FabAPI` | Opens main WPF UI window |
-| `GetProductInfo` | Export products with prices and labor values |
+| `GetProductInfo` | Export products with prices and labor values (see note below) |
 | `ExportItemData` | Export service items with product list entries |
 | `GetPriceTables` | Export price lists and breakpoint tables |
 | `GetInstallationTimes` | Export installation times tables |
@@ -92,6 +92,22 @@ FabricationSample/
 | `GetServiceTemplateData` | Export service template data with selection dialog |
 | `ImportProductList` | Import product list from CSV |
 | `ImportPriceList` | Import price list from CSV |
+
+### GetProductInfo — IsProductListed Column
+
+The `GetProductInfo` CSV export produces ~236K rows, but **not all rows are real products**:
+
+| `IsProductListed` Value | Meaning | Count | In MAP Product Database? |
+|-------------------------|---------|-------|--------------------------|
+| `"No"` | Item IS in the product information editor (MAP product database). The "No" refers to a "listed" flag, NOT to database presence. | Part of 164,850 | YES |
+| `"Yes"` | Item IS in the product information editor and is listed. | Part of 164,850 | YES |
+| `"N/A"` | Item is NOT in the MAP product database. These are ITM files sitting in item folders that have never been imported into the product editor. | 71,639 | NO |
+
+**Real product count = "Yes" + "No" = 164,850.** The "N/A" rows should be excluded from product-level analysis (pricing, HPH mapping, labor lookups, etc.).
+
+**Do NOT change the export command** to filter these out — too many downstream systems (fabrication-mcp, HPH mappers, Power BI) are connected to the current CSV format and handle the filtering themselves.
+
+The CSV also has **3 duplicate "Id" columns** — use positional indexing (`csv.reader`), not `DictReader`.
 
 ## FabricationBridgeService (localhost:5050)
 
@@ -114,6 +130,14 @@ GET /api/jobitems                # Items in current job
 **Key fix (v1.2.0)**: All 6 static ID-keyed dictionaries use `StringComparer.OrdinalIgnoreCase`
 to handle mixed-case product IDs (e.g., `MDSK_NIB_000142-0001`) correctly with
 `ToLowerInvariant()` URL routing.
+
+**Database identity fields** (added for multi-model hub):
+`GET /api/status` and `GET /api/cache/status` now include:
+- `database_path` — full filesystem path to active Fabrication database
+- `database_name` — folder name only (e.g., `Harris Wetside Database 2_0`)
+- `profile_name` — AutoCAD profile name (from `Application.CurrentProfile`)
+
+These let the MCP server and viewer know which database the bridge is serving.
 
 ## Key Patterns
 
