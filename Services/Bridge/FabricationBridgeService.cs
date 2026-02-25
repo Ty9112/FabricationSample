@@ -771,13 +771,41 @@ namespace FabricationSample.Services.Bridge
             });
 
             // Product-level counts from cache (N/A-aware — N/A is never a valid value)
-            int productsWithCost    = 0;
-            int productsWithLabor   = 0;
-            int productsWithHarrison = 0;
+            // Return null (not 0) when cache is still building, so consumers can
+            // distinguish "not yet counted" from "counted and zero."
+            // Count only products that:
+            //   1. Exist in _productIndex (are real products in the product editor, not N/A items)
+            //   2. Have at least one entry with value > 0 (excludes zero-cost/zero-labor entries)
+            object productsWithCost    = null;
+            object productsWithLabor   = null;
+            object productsWithHarrison = null;
             if (_cacheReady)
             {
-                productsWithCost = _priceCache.Count;   // unique products with price entries
-                productsWithLabor = _installCache.Count; // unique products with install entries
+                int costCount = 0;
+                foreach (var kvp in _priceCache)
+                {
+                    if (!_productIndex.ContainsKey(kvp.Key)) continue; // skip N/A items
+                    foreach (var pe in kvp.Value)
+                    {
+                        if (pe.TryGetValue("cost", out var cv) && cv is double cd && cd > 0)
+                        { costCount++; break; }
+                    }
+                }
+                productsWithCost = costCount;
+
+                int laborCount = 0;
+                foreach (var kvp in _installCache)
+                {
+                    if (!_productIndex.ContainsKey(kvp.Key)) continue; // skip N/A items
+                    foreach (var ie in kvp.Value)
+                    {
+                        if (ie.TryGetValue("labor_rate", out var lv) && lv is double ld && ld > 0)
+                        { laborCount++; break; }
+                    }
+                }
+                productsWithLabor = laborCount;
+
+                int hCount = 0;
                 foreach (var pd in _allProductsList)
                 {
                     if (pd.TryGetValue("supplier_ids", out var sObj) && sObj is Dict sids)
@@ -788,12 +816,13 @@ namespace FabricationSample.Services.Bridge
                             {
                                 string hv = kv.Value?.ToString() ?? "";
                                 if (hv.Length > 0 && !hv.Equals("N/A", StringComparison.OrdinalIgnoreCase))
-                                    productsWithHarrison++;
+                                    hCount++;
                                 break;
                             }
                         }
                     }
                 }
+                productsWithHarrison = hCount;
             }
 
             return Serialize(new Dict
@@ -823,8 +852,27 @@ namespace FabricationSample.Services.Bridge
         private string HandleCacheStatus()
         {
             int total  = _allProductsList.Count;
-            int priced = _priceCache.Count;
-            int timed  = _installCache.Count;
+            // Count only real products (in _productIndex) where at least one entry has value > 0
+            int priced = 0;
+            foreach (var kvp in _priceCache)
+            {
+                if (!_productIndex.ContainsKey(kvp.Key)) continue; // skip N/A items
+                foreach (var pe in kvp.Value)
+                {
+                    if (pe.TryGetValue("cost", out var cv) && cv is double cd && cd > 0)
+                    { priced++; break; }
+                }
+            }
+            int timed = 0;
+            foreach (var kvp in _installCache)
+            {
+                if (!_productIndex.ContainsKey(kvp.Key)) continue; // skip N/A items
+                foreach (var ie in kvp.Value)
+                {
+                    if (ie.TryGetValue("labor_rate", out var lv) && lv is double ld && ld > 0)
+                    { timed++; break; }
+                }
+            }
             string databasePath = "";
             string databaseName = "";
             SafeRead(() =>
