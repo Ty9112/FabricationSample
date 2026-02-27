@@ -6,7 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 FabricationSample is a .NET Framework 4.8 plugin for Autodesk AutoCAD 2024 with Fabrication CADmep integration. It provides a WPF UI for database management, export/import commands for fabrication data, and an HTTP bridge service for external tool integration.
 
-**Owner**: Tyler (tphillips@harriscompany.com)
 **Current Version**: v1.4.0
 
 ## Build
@@ -97,15 +96,15 @@ FabricationSample/
 
 The `GetProductInfo` CSV export produces ~236K rows, but **not all rows are real products**:
 
-| `IsProductListed` Value | Meaning | Count | In MAP Product Database? |
-|-------------------------|---------|-------|--------------------------|
-| `"No"` | Item IS in the product information editor (MAP product database). The "No" refers to a "listed" flag, NOT to database presence. | Part of 164,850 | YES |
-| `"Yes"` | Item IS in the product information editor and is listed. | Part of 164,850 | YES |
-| `"N/A"` | Item is NOT in the MAP product database. These are ITM files sitting in item folders that have never been imported into the product editor. | 71,639 | NO |
+| `IsProductListed` Value | Meaning | In MAP Product Database? |
+|-------------------------|---------|--------------------------|
+| `"No"` | Item IS in the product information editor (MAP product database). The "No" refers to a "listed" flag, NOT to database presence. | YES |
+| `"Yes"` | Item IS in the product information editor and is listed. | YES |
+| `"N/A"` | Item is NOT in the MAP product database. These are ITM files sitting in item folders that have never been imported into the product editor. | NO |
 
-**Real product count = "Yes" + "No" = 164,850.** The "N/A" rows should be excluded from product-level analysis (pricing, HPH mapping, labor lookups, etc.).
+**Real product count = "Yes" + "No" rows only.** The "N/A" rows should be excluded from product-level analysis (pricing, labor lookups, etc.).
 
-**Do NOT change the export command** to filter these out — too many downstream systems (fabrication-mcp, HPH mappers, Power BI) are connected to the current CSV format and handle the filtering themselves.
+**Do NOT change the export command** to filter these out — downstream systems handle the filtering themselves.
 
 The CSV also has **3 duplicate "Id" columns** — use positional indexing (`csv.reader`), not `DictReader`.
 
@@ -130,22 +129,15 @@ GET /api/installtimes            # Installation times tables
 GET /api/jobitems                # Items in current job
 ```
 
-**Consumers**:
-- XbimWebUI (Harris 3D Viewer) — product detail, images, pricing
-- fabrication-mcp MCP server — wraps as 15 live MCP tools
-
 **Key fix (v1.2.0)**: All 6 static ID-keyed dictionaries use `StringComparer.OrdinalIgnoreCase`
 to handle mixed-case product IDs (e.g., `MDSK_NIB_000142-0001`) correctly with
 `ToLowerInvariant()` URL routing.
 
-**Database identity fields** (multi-model hub support):
+**Database identity fields** (multi-profile support):
 `GET /api/status` and `GET /api/cache/status` include:
 - `database_path` — full filesystem path to active Fabrication database
-- `database_name` — folder name only (e.g., `Harris Wetside Database 2_0`)
+- `database_name` — folder name only
 - `profile_name` — AutoCAD profile name (from `Application.CurrentProfile`)
-
-These are consumed by the fabrication-mcp hub system (`get_active_profile`, `get_database_summary`)
-and the XbimWebUI hub landing page to identify which database the bridge is serving.
 
 ## Key Patterns
 
@@ -182,8 +174,8 @@ Each `DatabaseEditor-*.cs` file adds methods for one tab. The XAML container is
 
 **IMPORTANT — read before committing anything binary:**
 
-- `Compiled/FabricationSample.dll` is **gitignored** and must NEVER be committed or pushed to the public repo (`Ty9112/FabricationSample`)
-- All builds — including internal builds and any autodesk-mcp generated builds — stay local only
+- `Compiled/FabricationSample.dll` is **gitignored** and must NEVER be committed or pushed
+- All builds stay local only
 - Source code changes commit normally to `master`; the compiled DLL does not
 
 ### Publishing a Release
@@ -195,13 +187,8 @@ Official DLL releases are distributed exclusively via **GitHub Releases**:
 git tag v1.0.0
 git push origin v1.0.0
 
-# 2. On GitHub: Releases → New Release → select tag → attach FabricationSample.dll
+# 2. On GitHub: Releases > New Release > select tag > attach FabricationSample.dll
 ```
-
-### Release Reminder (for agents)
-
-After a significant batch of commits (roughly 10+ commits or major feature completion), prompt Tyler:
-> "We've made X commits since the last release. Want to publish a new GitHub Release and attach the latest DLL?"
 
 ## Current Branch
 
@@ -213,14 +200,7 @@ After a significant batch of commits (roughly 10+ commits or major feature compl
 - `ImportCommands.cs:381` — Implement price list selection dialog
 - `DatabaseEditor-Materials.cs:110` — Consider material usage cloner
 
-### Recently Resolved
-- ~~`ItemFoldersView.xaml.cs:91` — Handle adding new folders~~ (Feb 2026 — folder creation with icon + lazy-load child)
-- ~~`SupplierIdsConverter.cs:63` — ConvertBack threw NotImplementedException~~ (Feb 2026 — returns Binding.DoNothing)
-- ~~Convert.ToDouble crash risk (8 locations)~~ (Feb 2026 — replaced with double.TryParse in 4 files)
-
 ## Related Projects
 
-- `DiscordCADmep` - Simpler AutoCAD plugin with similar export commands (same repo parent)
+- `DiscordCADmep` - Simpler AutoCAD plugin with similar export commands
 - `fabrication-api-xmldocs` - API documentation extracted from FabricationAPI.chm
-- `XbimWebUI` (Harris 3D Viewer) - Consumes bridge endpoints for product visualization
-- `fabrication-mcp` - MCP server wrapping bridge + CSV exports as 33 tools (14 CSV + 15 live bridge + 4 estimate)

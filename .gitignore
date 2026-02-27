@@ -7,6 +7,10 @@
 # The entire Compiled/ folder is gitignored.
 Compiled/
 
+# Development plans and internal docs (contain local paths and project-specific references)
+docs/plans/
+EXPORT_UI_INTEGRATION_SUMMARY.md
+
 # User-specific files
 *.rsuser
 *.suo

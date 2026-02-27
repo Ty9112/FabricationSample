@@ -252,4 +252,4 @@ For issues or questions:
 ---
 
 **Created:** January 19, 2026
-**Reference:** `[MG - 1]_TemplateData.csv` (Harris Wetside Database 2_0)
+**Reference:** `[MG - 1]_TemplateData.csv`
