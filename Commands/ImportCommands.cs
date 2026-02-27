@@ -362,26 +362,127 @@ namespace FabricationSample.Commands
                 if (!ValidateFabricationLoaded())
                     return;
 
-                // Check if there's a price list selected
-                // Note: This requires access to the currently selected price list from the UI
-                // For now, we'll prompt the user to select one
-                MessageBox.Show(
-                    "Price List Import:\n\n" +
-                    "This command requires a price list to be selected.\n\n" +
-                    "Please use the Database Editor to select a price list,\n" +
-                    "then use the Import button in that interface.\n\n" +
-                    "This command will be enhanced in a future update to support\n" +
-                    "direct price list selection.",
-                    "Price List Import",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                Princ("Starting price list import...");
 
-                Princ("Price list import: Use Database Editor Import button for now.");
+                // 2. Show price list selection dialog
+                var selectionWindow = new PriceListSelectionWindow();
+                selectionWindow.ShowDialog();
 
-                // TODO: Implement price list selection dialog
-                // For now, this is a placeholder that directs users to the UI
+                if (!selectionWindow.DialogResultOk)
+                {
+                    Princ("Import cancelled: No price list selected.");
+                    return;
+                }
 
-                return;
+                var supplierGroup = selectionWindow.SelectedSupplierGroup;
+                var priceList = selectionWindow.SelectedPriceList;
+
+                Princ($"Selected: {supplierGroup.Name} > {priceList.Name}");
+
+                // 3. Get import file
+                string importFile = PromptForImportFile("Price List");
+                if (string.IsNullOrEmpty(importFile))
+                {
+                    Princ("Import cancelled: No file selected.");
+                    return;
+                }
+
+                // 4. Show column mapping dialog
+                var requiredFields = new[] { "DatabaseId", "Cost" };
+                var optionalFields = new[] { "DiscountCode", "Units", "Status", "Date" };
+
+                var mappingWindow = new ColumnMappingWindow(
+                    importFile, requiredFields, optionalFields);
+                mappingWindow.ShowDialog();
+
+                if (!mappingWindow.DialogResultOk)
+                {
+                    Princ("Import cancelled: Column mapping cancelled.");
+                    return;
+                }
+
+                // 5. Create import options with column mapping
+                var options = new ImportOptions
+                {
+                    HasHeaderRow = mappingWindow.HasHeaders,
+                    UpdateExisting = true,
+                    StopOnFirstError = false
+                };
+
+                if (mappingWindow.ResultMapping != null)
+                {
+                    options.CustomSettings[ColumnMappingConfig.SettingsKey] = mappingWindow.ResultMapping;
+                }
+
+                // 6. Create import service
+                var importService = new PriceTableImportService(priceList, supplierGroup);
+
+                // 7. Validate file
+                Princ("Validating CSV file...");
+                var validation = importService.Validate(importFile, options);
+
+                if (!ShowValidationResult(validation))
+                {
+                    Princ("Import cancelled: Validation failed.");
+                    return;
+                }
+
+                // 8. Generate preview
+                Princ("Generating import preview...");
+                var preview = importService.Preview(importFile, options);
+
+                if (preview.IsSuccess)
+                {
+                    string previewMsg = $"Ready to import into: {supplierGroup.Name} > {priceList.Name}\n\n" +
+                                      $"New entries: {preview.NewRecordCount}\n" +
+                                      $"Updated entries: {preview.UpdatedRecordCount}\n" +
+                                      $"Skipped entries: {preview.SkippedRecordCount}\n\n" +
+                                      $"Continue?";
+
+                    if (MessageBox.Show(previewMsg, "Import Preview", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    {
+                        Princ("Import cancelled by user.");
+                        return;
+                    }
+                }
+                else
+                {
+                    ShowError($"Failed to generate preview: {preview.ErrorMessage}");
+                    return;
+                }
+
+                // 9. Perform import
+                Princ("Importing price list data...");
+
+                importService.ProgressChanged += (sender, args) =>
+                {
+                    Princ($"  {args.Message}");
+                };
+
+                var result = importService.Import(importFile, options);
+
+                // 10. Handle result
+                if (result.IsSuccess)
+                {
+                    // Save changes to database
+                    if (result.ImportedCount > 0)
+                    {
+                        Princ("Saving changes to database...");
+                        FabDB.SaveProductCosts();
+                    }
+
+                    ShowSuccess(result);
+                    Princ($"Import complete: {result.ImportedCount} records imported into {priceList.Name}.");
+                }
+                else if (result.WasCancelled)
+                {
+                    Princ("Import was cancelled by user.");
+                    MessageBox.Show("Import was cancelled.", "Cancelled", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    ShowError($"Import failed: {result.ErrorMessage}");
+                }
             }
             catch (System.Exception ex)
             {

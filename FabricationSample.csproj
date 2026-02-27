@@ -357,6 +357,9 @@
     <Compile Include="Windows\ServiceTemplateSelectionWindow.xaml.cs">
       <DependentUpon>ServiceTemplateSelectionWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Windows\PriceListSelectionWindow.xaml.cs">
+      <DependentUpon>PriceListSelectionWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Windows\PriceTableSelectionWindow.xaml.cs">
       <DependentUpon>PriceTableSelectionWindow.xaml</DependentUpon>
     </Compile>
@@ -616,6 +619,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Windows\ServiceTemplateSelectionWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Windows\PriceListSelectionWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
