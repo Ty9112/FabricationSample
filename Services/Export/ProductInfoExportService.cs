@@ -157,25 +157,26 @@ namespace FabricationSample.Services.Export
         {
             var productListedNames = new HashSet<string>();
 
-            foreach (var service in FabDB.Services)
+            // Snapshot to avoid concurrent modification with bridge
+            foreach (var service in FabDB.Services.ToList())
             {
                 var serviceTemplate = service.ServiceTemplate;
                 if (serviceTemplate?.ServiceTabs == null) continue;
 
-                foreach (var tab in serviceTemplate.ServiceTabs)
+                foreach (var tab in serviceTemplate.ServiceTabs.ToList())
                 {
                     if (tab.ServiceButtons == null) continue;
-                    foreach (var button in tab.ServiceButtons)
+                    foreach (var button in tab.ServiceButtons.ToList())
                     {
                         if (button.ServiceButtonItems == null) continue;
-                        foreach (var sbItem in button.ServiceButtonItems)
+                        foreach (var sbItem in button.ServiceButtonItems.ToList())
                         {
                             try
                             {
                                 var item = ContentManager.LoadItem(sbItem.ItemPath);
                                 if (item != null && item.IsProductList && item.ProductList?.Rows != null)
                                 {
-                                    foreach (var row in item.ProductList.Rows)
+                                    foreach (var row in item.ProductList.Rows.ToList())
                                     {
                                         try { if (!string.IsNullOrEmpty(row.Name)) productListedNames.Add(row.Name); } catch { }
                                     }
@@ -335,18 +336,19 @@ namespace FabricationSample.Services.Export
             catch { }
 
             // Now iterate through items to find breakpoint labor by DatabaseId
-            foreach (var service in FabDB.Services)
+            // Snapshot to avoid concurrent modification with bridge
+            foreach (var service in FabDB.Services.ToList())
             {
                 var serviceTemplate = service.ServiceTemplate;
                 if (serviceTemplate?.ServiceTabs == null) continue;
 
-                foreach (var tab in serviceTemplate.ServiceTabs)
+                foreach (var tab in serviceTemplate.ServiceTabs.ToList())
                 {
                     if (tab.ServiceButtons == null) continue;
-                    foreach (var button in tab.ServiceButtons)
+                    foreach (var button in tab.ServiceButtons.ToList())
                     {
                         if (button.ServiceButtonItems == null) continue;
-                        foreach (var sbItem in button.ServiceButtonItems)
+                        foreach (var sbItem in button.ServiceButtonItems.ToList())
                         {
                             try
                             {
@@ -363,7 +365,7 @@ namespace FabricationSample.Services.Export
 
                                 if (item.IsProductList && item.ProductList?.Rows != null)
                                 {
-                                    foreach (var row in item.ProductList.Rows)
+                                    foreach (var row in item.ProductList.Rows.ToList())
                                     {
                                         string dbId = row.DatabaseId;
                                         if (string.IsNullOrEmpty(dbId) || dbId == "N/A") continue;

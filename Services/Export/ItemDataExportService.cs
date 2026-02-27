@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Autodesk.Fabrication;
 using Autodesk.Fabrication.Content;
 using Autodesk.Fabrication.DB;
@@ -40,16 +41,19 @@ namespace FabricationSample.Services.Export
                 int totalItems = 0;
                 int processedItems = 0;
 
+                // Snapshot services to avoid concurrent modification with bridge
+                var services = FabDB.Services.ToList();
+
                 // First pass: count items for progress reporting
-                foreach (var service in FabDB.Services)
+                foreach (var service in services)
                 {
                     var serviceTemplate = service.ServiceTemplate;
                     if (serviceTemplate?.ServiceTabs == null) continue;
 
-                    foreach (var tab in serviceTemplate.ServiceTabs)
+                    foreach (var tab in serviceTemplate.ServiceTabs.ToList())
                     {
                         if (tab.ServiceButtons == null) continue;
-                        foreach (var button in tab.ServiceButtons)
+                        foreach (var button in tab.ServiceButtons.ToList())
                         {
                             if (button.ServiceButtonItems != null)
                                 totalItems += button.ServiceButtonItems.Count;
@@ -60,7 +64,7 @@ namespace FabricationSample.Services.Export
                 ReportProgress(10, 100, $"Found {totalItems} items to process...");
 
                 // Second pass: generate CSV data
-                foreach (var service in FabDB.Services)
+                foreach (var service in services)
                 {
                     if (IsCancelled) return csvData;
 
@@ -69,18 +73,18 @@ namespace FabricationSample.Services.Export
                     if (serviceTemplate == null) continue;
 
                     string templateName = serviceTemplate.Name;
-                    var serviceTabs = serviceTemplate.ServiceTabs;
+                    var serviceTabs = serviceTemplate.ServiceTabs?.ToList();
                     if (serviceTabs == null) continue;
 
                     foreach (var tab in serviceTabs)
                     {
-                        var buttons = tab.ServiceButtons;
+                        var buttons = tab.ServiceButtons?.ToList();
                         if (buttons == null) continue;
 
                         foreach (var button in buttons)
                         {
                             string buttonName = button.Name;
-                            var sbItems = button.ServiceButtonItems;
+                            var sbItems = button.ServiceButtonItems?.ToList();
                             if (sbItems == null) continue;
 
                             foreach (var sbItem in sbItems)
@@ -116,7 +120,7 @@ namespace FabricationSample.Services.Export
                                         ? (condition.LessThanEqualTo > -1 ? condition.LessThanEqualTo.ToString() : "Unrestricted")
                                         : "N/A";
 
-                                    foreach (var plRow in item.ProductList.Rows)
+                                    foreach (var plRow in item.ProductList.Rows.ToList())
                                     {
                                         string entryName = "";
                                         try { entryName = plRow.Name; }

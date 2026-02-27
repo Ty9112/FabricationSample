@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Autodesk.Fabrication.Content;
 using FabricationSample.Utilities;
 using FabDB = Autodesk.Fabrication.DB.Database;
@@ -38,16 +39,19 @@ namespace FabricationSample.Services.Export
                 int itemsWithTable = 0;
                 int totalItems = 0;
 
+                // Snapshot to avoid concurrent modification with bridge
+                var services = FabDB.Services.ToList();
+
                 // First pass: count items
-                foreach (var service in FabDB.Services)
+                foreach (var service in services)
                 {
                     var serviceTemplate = service.ServiceTemplate;
                     if (serviceTemplate?.ServiceTabs == null) continue;
 
-                    foreach (var tab in serviceTemplate.ServiceTabs)
+                    foreach (var tab in serviceTemplate.ServiceTabs.ToList())
                     {
                         if (tab.ServiceButtons == null) continue;
-                        foreach (var button in tab.ServiceButtons)
+                        foreach (var button in tab.ServiceButtons.ToList())
                         {
                             if (button.ServiceButtonItems != null)
                                 totalItems += button.ServiceButtonItems.Count;
@@ -58,7 +62,7 @@ namespace FabricationSample.Services.Export
                 ReportProgress(10, 100, $"Found {totalItems} items to process...");
 
                 // Second pass: process items
-                foreach (var service in FabDB.Services)
+                foreach (var service in services)
                 {
                     if (IsCancelled) return csvData;
 
@@ -66,15 +70,15 @@ namespace FabricationSample.Services.Export
                     var serviceTemplate = service.ServiceTemplate;
                     if (serviceTemplate?.ServiceTabs == null) continue;
 
-                    foreach (var tab in serviceTemplate.ServiceTabs)
+                    foreach (var tab in serviceTemplate.ServiceTabs.ToList())
                     {
                         if (tab.ServiceButtons == null) continue;
 
-                        foreach (var button in tab.ServiceButtons)
+                        foreach (var button in tab.ServiceButtons.ToList())
                         {
                             if (button.ServiceButtonItems == null) continue;
 
-                            foreach (var sbItem in button.ServiceButtonItems)
+                            foreach (var sbItem in button.ServiceButtonItems.ToList())
                             {
                                 if (IsCancelled) return csvData;
 

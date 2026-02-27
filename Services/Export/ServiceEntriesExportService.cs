@@ -42,13 +42,15 @@ namespace FabricationSample.Services.Export
                     "Line Weight"
                 ));
 
-                int totalServices = FabDB.Services.Count();
+                // Snapshot to avoid concurrent modification with bridge
+                var services = FabDB.Services.ToList();
+                int totalServices = services.Count;
                 int processedServices = 0;
 
                 ReportProgress(10, 100, $"Found {totalServices} services to process...");
 
                 // Process each service
-                foreach (var service in FabDB.Services)
+                foreach (var service in services)
                 {
                     // Filter by selected services if specified
                     if (SelectedServiceNames != null && SelectedServiceNames.Count > 0)
@@ -66,7 +68,8 @@ namespace FabricationSample.Services.Export
                     string serviceName = service.Name;
 
                     // Check if service has entries
-                    if (service.ServiceEntries == null || !service.ServiceEntries.Any())
+                    var entries = service.ServiceEntries?.ToList();
+                    if (entries == null || entries.Count == 0)
                     {
                         // Add a row indicating no entries
                         csvData.Add(CsvHelpers.WrapForCsv(
@@ -84,7 +87,7 @@ namespace FabricationSample.Services.Export
                     }
 
                     // Process each service entry
-                    foreach (var entry in service.ServiceEntries)
+                    foreach (var entry in entries)
                     {
                         if (IsCancelled) return csvData;
 

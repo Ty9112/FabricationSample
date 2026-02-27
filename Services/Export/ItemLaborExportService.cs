@@ -112,7 +112,8 @@ namespace FabricationSample.Services.Export
                 int itemCount = 0;
                 int laborFoundCount = 0;
 
-                foreach (var service in FabDB.Services)
+                // Snapshot to avoid concurrent modification with bridge
+                foreach (var service in FabDB.Services.ToList())
                 {
                     if (IsCancelled) return csvData;
 
@@ -120,15 +121,15 @@ namespace FabricationSample.Services.Export
                     var serviceTemplate = service.ServiceTemplate;
                     if (serviceTemplate?.ServiceTabs == null) continue;
 
-                    foreach (var tab in serviceTemplate.ServiceTabs)
+                    foreach (var tab in serviceTemplate.ServiceTabs.ToList())
                     {
                         if (tab.ServiceButtons == null) continue;
 
-                        foreach (var button in tab.ServiceButtons)
+                        foreach (var button in tab.ServiceButtons.ToList())
                         {
                             if (button.ServiceButtonItems == null) continue;
 
-                            foreach (var sbItem in button.ServiceButtonItems)
+                            foreach (var sbItem in button.ServiceButtonItems.ToList())
                             {
                                 if (IsCancelled) return csvData;
 
@@ -157,7 +158,7 @@ namespace FabricationSample.Services.Export
                                     // Process product list rows
                                     if (item.IsProductList && item.ProductList?.Rows != null)
                                     {
-                                        foreach (var row in item.ProductList.Rows)
+                                        foreach (var row in item.ProductList.Rows.ToList())
                                         {
                                             itemCount++;
                                             string dbId = row.DatabaseId ?? "N/A";

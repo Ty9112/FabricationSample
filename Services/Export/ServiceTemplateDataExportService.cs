@@ -116,13 +116,15 @@ namespace FabricationSample.Services.Export
                     ));
                 }
 
-                int totalServices = FabDB.Services.Count;
+                // Snapshot to avoid concurrent modification with bridge
+                var services = FabDB.Services.ToList();
+                int totalServices = services.Count;
                 int processedServices = 0;
 
                 ReportProgress(10, 100, $"Found {totalServices} services to process...");
 
                 // Process each service
-                foreach (var service in FabDB.Services)
+                foreach (var service in services)
                 {
                     // Filter by selected services if specified
                     if (SelectedServiceNames != null && SelectedServiceNames.Count > 0)
@@ -151,7 +153,7 @@ namespace FabricationSample.Services.Export
                     string templateName = serviceTemplate.Name ?? "";
 
                     // Process each tab/button in the service
-                    foreach (var tab in serviceTemplate.ServiceTabs)
+                    foreach (var tab in serviceTemplate.ServiceTabs.ToList())
                     {
                         if (tab.ServiceButtons == null) continue;
 
@@ -218,14 +220,14 @@ namespace FabricationSample.Services.Export
                             ));
                         }
 
-                        foreach (var button in tab.ServiceButtons)
+                        foreach (var button in tab.ServiceButtons.ToList())
                         {
                             if (IsCancelled) return csvData;
 
                             string buttonName = button.Name;
                             string buttonCode = button.ButtonCode ?? "";
 
-                            var sbItems = button.ServiceButtonItems;
+                            var sbItems = button.ServiceButtonItems?.ToList();
                             if (sbItems == null || sbItems.Count == 0)
                             {
                                 // Button with no items - still add a row

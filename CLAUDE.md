@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 FabricationSample is a .NET Framework 4.8 plugin for Autodesk AutoCAD 2024 with Fabrication CADmep integration. It provides a WPF UI for database management, export/import commands for fabrication data, and an HTTP bridge service for external tool integration.
 
 **Owner**: Tyler (tphillips@harriscompany.com)
-**Current Version**: v1.2.0
+**Current Version**: v1.4.0
 
 ## Build
 

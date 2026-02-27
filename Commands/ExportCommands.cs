@@ -63,14 +63,94 @@ namespace FabricationSample.Commands
         }
 
         /// <summary>
-        /// Generate timestamped file path for export.
+        /// Generate timestamped file path for export with profile prefix.
+        /// Format: {GROUP}_{DBABBREV}_{PROFILE}_{baseName}_{timestamp}.csv
         /// </summary>
         /// <param name="folder">Output folder</param>
-        /// <param name="baseName">Base name for file</param>
-        /// <returns>Full file path with timestamp</returns>
+        /// <param name="baseName">Base name for file (command name)</param>
+        /// <returns>Full file path with profile prefix and timestamp</returns>
         private static string GenerateTimestampedPath(string folder, string baseName)
         {
-            return FileHelpers.GenerateTimestampedFilePath(folder, baseName);
+            string prefix = GetProfilePrefix();
+            string fullBaseName = string.IsNullOrEmpty(prefix) ? baseName : $"{prefix}_{baseName}";
+            return FileHelpers.GenerateTimestampedFilePath(folder, fullBaseName);
+        }
+
+        /// <summary>
+        /// Get export prefix from CurrentConfiguration and AutoCAD profile.
+        /// Parses "{ContentGroup} - {DatabaseName}" from Application.CurrentConfiguration.
+        /// Returns "{GROUP}_{DBABBREV}_{PROFILE}" e.g. "GRP_DB10_ProjectAlpha".
+        /// </summary>
+        private static string GetProfilePrefix()
+        {
+            try
+            {
+                var parts = new System.Collections.Generic.List<string>();
+
+                // Parse CurrentConfiguration: "{ContentGroup} - {DatabaseName}"
+                string config = Autodesk.Fabrication.ApplicationServices.Application.CurrentConfiguration;
+                if (!string.IsNullOrEmpty(config))
+                {
+                    int separatorIndex = config.IndexOf(" - ");
+                    if (separatorIndex > 0)
+                    {
+                        string contentGroup = config.Substring(0, separatorIndex).Trim();
+                        string dbName = config.Substring(separatorIndex + 3).Trim();
+
+                        // Content group: strip "_" prefix and " Content" suffix → "FAB", "BIM"
+                        string group = contentGroup.TrimStart('_');
+                        if (group.EndsWith(" Content"))
+                            group = group.Substring(0, group.Length - " Content".Length);
+                        group = group.ToUpper();
+
+                        parts.Add(group);
+
+                        string dbAbbrev = AbbreviateDbName(dbName);
+                        if (!string.IsNullOrEmpty(dbAbbrev))
+                            parts.Add(dbAbbrev);
+                    }
+                }
+
+                // AutoCAD profile name (e.g., Default, GLOBAL, ProjectAlpha)
+                string profileName = Autodesk.Fabrication.ApplicationServices.Application.CurrentProfile;
+                if (!string.IsNullOrEmpty(profileName))
+                {
+                    parts.Add(profileName.Replace(" ", "_"));
+                }
+
+                if (parts.Count > 0)
+                    return string.Join("_", parts);
+            }
+            catch { }
+            return "";
+        }
+
+        /// <summary>
+        /// Abbreviate database name to a short acronym.
+        /// "My Database 2.0" → "MD20"
+        /// Takes first letter of each alpha word (uppercase) + version digits (periods stripped).
+        /// </summary>
+        private static string AbbreviateDbName(string dbName)
+        {
+            if (string.IsNullOrEmpty(dbName)) return "";
+
+            var words = dbName.Split(new[] { ' ', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+            var abbrev = new System.Text.StringBuilder();
+
+            foreach (var word in words)
+            {
+                if (char.IsDigit(word[0]))
+                {
+                    // Version number: strip periods, append digits
+                    abbrev.Append(word.Replace(".", ""));
+                }
+                else
+                {
+                    abbrev.Append(char.ToUpper(word[0]));
+                }
+            }
+
+            return abbrev.ToString();
         }
 
         /// <summary>
@@ -314,9 +394,11 @@ namespace FabricationSample.Commands
                     return;
                 }
 
-                // Create timestamped subfolder
+                // Create timestamped subfolder with profile prefix
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string outputFolder = Path.Combine(exportFolder, $"PriceTables_{timestamp}");
+                string prefix = GetProfilePrefix();
+                string folderName = string.IsNullOrEmpty(prefix) ? $"PriceTables_{timestamp}" : $"{prefix}_PriceTables_{timestamp}";
+                string outputFolder = Path.Combine(exportFolder, folderName);
 
                 Princ("Generating price tables...");
                 var exportService = new PriceTablesExportService();
@@ -372,9 +454,11 @@ namespace FabricationSample.Commands
                     return;
                 }
 
-                // Create timestamped subfolder
+                // Create timestamped subfolder with profile prefix
                 string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string outputFolder = Path.Combine(exportFolder, $"InstallationTimes_{timestamp}");
+                string prefix = GetProfilePrefix();
+                string folderName = string.IsNullOrEmpty(prefix) ? $"InstallationTimes_{timestamp}" : $"{prefix}_InstallationTimes_{timestamp}";
+                string outputFolder = Path.Combine(exportFolder, folderName);
 
                 Princ("Generating installation times...");
                 var exportService = new InstallationTimesExportService();
