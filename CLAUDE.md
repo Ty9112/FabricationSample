@@ -197,7 +197,6 @@ git push origin v1.0.0
 ## TODOs
 
 - `ImportCommands.cs:246` — Re-enable product list import when API type issues are resolved
-- `ImportCommands.cs:381` — Implement price list selection dialog
 - `DatabaseEditor-Materials.cs:110` — Consider material usage cloner
 
 ## Related Projects
