@@ -250,6 +250,7 @@ namespace FabricationSample.Services.Bridge
                             foreach (var tab in tmpl.ServiceTabs)
                             {
                                 if (tab.ServiceButtons == null) continue;
+                                string tabName = tab.Name ?? "";
                                 foreach (var btn in tab.ServiceButtons)
                                 {
                                     string btnName = btn.Name ?? "";
@@ -260,6 +261,8 @@ namespace FabricationSample.Services.Bridge
                                         {
                                             var item     = ContentManager.LoadItem(sbItem.ItemPath);
                                             string itemPath = item?.FilePath ?? "";
+                                            string itemFolder = "";
+                                            try { itemFolder = Path.GetDirectoryName(itemPath) ?? ""; } catch { }
 
                                             // Image source priority:
                                             // 1. Fabrication API Item.ImagePath property
@@ -317,8 +320,10 @@ namespace FabricationSample.Services.Bridge
                                                     {
                                                         ["service_name"]   = "",
                                                         ["template_name"]  = tmplName,
+                                                        ["tab_name"]       = tabName,
                                                         ["button_name"]    = btnName,
                                                         ["item_path"]      = itemPath,
+                                                        ["item_folder"]    = itemFolder,
                                                         ["image_path"]     = imagePath,
                                                         ["button_image"]   = buttonImagePath,
                                                         ["entry_name"]     = entryName,
@@ -335,8 +340,10 @@ namespace FabricationSample.Services.Bridge
                                                 {
                                                     ["service_name"]   = "",
                                                     ["template_name"]  = tmplName,
+                                                    ["tab_name"]       = tabName,
                                                     ["button_name"]    = btnName,
                                                     ["item_path"]      = itemPath,
+                                                    ["item_folder"]    = itemFolder,
                                                     ["image_path"]     = imagePath,
                                                     ["button_image"]   = buttonImagePath,
                                                     ["entry_name"]     = "",
@@ -1385,8 +1392,7 @@ namespace FabricationSample.Services.Bridge
             // Group: button_name → items
             var buttonGroups = svcItems.GroupBy(d => Str(d, "button_name")).ToList();
 
-            // Reconstruct tabs by looking at live service template structure
-            // (Phase 3 doesn't store tab names, so build flat button list)
+            // Build flat button list (tabs reconstructed from cache tab_name below)
             var buttons = new List<Dict>();
             foreach (var bg in buttonGroups)
             {
@@ -1403,6 +1409,7 @@ namespace FabricationSample.Services.Bridge
                     items.Add(new Dict
                     {
                         ["item_path"]       = Str(si, "item_path"),
+                        ["item_folder"]     = Str(si, "item_folder"),
                         ["image_path"]      = Str(si, "image_path"),
                         ["entry_name"]      = entryName,
                         ["condition_desc"]  = Str(si, "condition_desc"),
@@ -1433,37 +1440,27 @@ namespace FabricationSample.Services.Bridge
                 });
             }
 
-            // Try to get tab structure from live API
+            // Group by tab_name from cache (no live API re-query needed)
             var tabs = new List<Dict>();
-            SafeRead(() =>
+            // NOTE: Tabs sorted alphabetically — Fabrication DB tab order is not preserved.
+            // If tab display order matters, capture a tab index during Phase 3 Pass 1.
+            var tabGroups = svcItems.GroupBy(d => Str(d, "tab_name")).OrderBy(g => g.Key).ToList();
+
+            foreach (var tg in tabGroups)
             {
-                try
+                string tabLabel = string.IsNullOrEmpty(tg.Key) ? "All" : tg.Key;
+                var tabBtnNames = tg.Select(d => Str(d, "button_name")).Where(n => !string.IsNullOrEmpty(n)).Distinct().ToHashSet();
+                var tabButtons = buttons.Where(b => tabBtnNames.Contains(Str(b, "name"))).ToList();
+
+                tabs.Add(new Dict
                 {
-                    var svc = FabDB.Services.FirstOrDefault(s =>
-                        (s.Name ?? "").Equals(svcName, StringComparison.OrdinalIgnoreCase));
-                    if (svc?.ServiceTemplate?.ServiceTabs == null) return;
+                    ["name"]         = tabLabel,
+                    ["button_count"] = tabButtons.Count,
+                    ["buttons"]      = tabButtons,
+                });
+            }
 
-                    foreach (var tab in svc.ServiceTemplate.ServiceTabs)
-                    {
-                        string tabName = tab.Name ?? "";
-                        var tabBtnNames = new HashSet<string>();
-                        if (tab.ServiceButtons != null)
-                            foreach (var btn in tab.ServiceButtons)
-                                tabBtnNames.Add(btn.Name ?? "");
-
-                        var tabButtons = buttons.Where(b => tabBtnNames.Contains(Str(b, "name"))).ToList();
-                        tabs.Add(new Dict
-                        {
-                            ["name"]         = tabName,
-                            ["button_count"] = tabButtons.Count,
-                            ["buttons"]      = tabButtons,
-                        });
-                    }
-                }
-                catch { }
-            });
-
-            // If live API failed, return flat button list under a single "All" tab
+            // Fallback if no tab_name data present (pre-cache data)
             if (!tabs.Any())
             {
                 tabs.Add(new Dict
