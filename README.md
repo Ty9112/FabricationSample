@@ -531,9 +531,6 @@ Traditionally, fixing this requires manually re-setting product info, cost table
 
 #### Export Items
 
-![Export Items — select items from the folder tree and choose an output folder](Examples/Screenshots/ExportItems.png)
-*Export Items: Select .ITM files from the item folder tree (left), then choose an output folder (right). A manifest.json is generated with all database reference names.*
-
 1. Open the FabAPI window and navigate to the **Manage Content** tab
 2. Click **Export Items**
 3. The Export Items window opens showing a tree view of all item folders with checkboxes
