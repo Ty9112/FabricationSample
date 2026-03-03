@@ -309,7 +309,9 @@ namespace FabricationSample.Services.Bridge
                                                 foreach (var row in item.ProductList.Rows)
                                                 {
                                                     string entryName = "";
+                                                    string rowDbId = "";
                                                     try { entryName = row.Name ?? ""; } catch { }
+                                                    try { rowDbId = row.DatabaseId ?? ""; } catch { }
                                                     if (!string.IsNullOrEmpty(entryName))
                                                     {
                                                         productListedNew.Add(entryName);
@@ -327,6 +329,7 @@ namespace FabricationSample.Services.Bridge
                                                         ["image_path"]     = imagePath,
                                                         ["button_image"]   = buttonImagePath,
                                                         ["entry_name"]     = entryName,
+                                                        ["database_id"]    = rowDbId,
                                                         ["condition_desc"] = condDesc,
                                                         ["greater_than"]   = gt,
                                                         ["condition_id"]   = condId,
@@ -347,6 +350,7 @@ namespace FabricationSample.Services.Bridge
                                                     ["image_path"]     = imagePath,
                                                     ["button_image"]   = buttonImagePath,
                                                     ["entry_name"]     = "",
+                                                    ["database_id"]    = "",
                                                     ["condition_desc"] = condDesc,
                                                     ["greater_than"]   = gt,
                                                     ["condition_id"]   = condId,
@@ -1095,7 +1099,26 @@ namespace FabricationSample.Services.Bridge
             SafeRead(() =>
             {
                 foreach (var svc in FabDB.Services)
-                    results.Add(new Dict { ["name"] = FixEncoding(svc.Name ?? ""), ["template"] = FixEncoding(svc.ServiceTemplate?.Name ?? "") });
+                {
+                    string svcType = "";
+                    try
+                    {
+                        if (svc.ServiceEntries != null && svc.ServiceEntries.Count > 0)
+                            svcType = string.Join(", ", svc.ServiceEntries
+                                .Select(e => e.ServiceType?.Description ?? "")
+                                .Where(s => !string.IsNullOrEmpty(s))
+                                .Distinct());
+                    }
+                    catch { }
+
+                    results.Add(new Dict
+                    {
+                        ["name"]         = FixEncoding(svc.Name ?? ""),
+                        ["group"]        = FixEncoding(svc.Group ?? ""),
+                        ["template"]     = FixEncoding(svc.ServiceTemplate?.Name ?? ""),
+                        ["service_type"] = FixEncoding(svcType),
+                    });
+                }
             });
             return Serialize(results);
         }
@@ -1412,6 +1435,7 @@ namespace FabricationSample.Services.Bridge
                         ["item_folder"]     = Str(si, "item_folder"),
                         ["image_path"]      = Str(si, "image_path"),
                         ["entry_name"]      = entryName,
+                        ["database_id"]     = Str(si, "database_id"),
                         ["condition_desc"]  = Str(si, "condition_desc"),
                         ["greater_than"]    = Str(si, "greater_than"),
                         ["less_than_eq"]    = Str(si, "less_than_eq"),
@@ -1419,9 +1443,9 @@ namespace FabricationSample.Services.Bridge
                     });
                 }
 
-                // Deduplicate items by item_path + condition
+                // Deduplicate items by item_path + condition + entry_name (preserve different sizes)
                 var uniqueItems = items
-                    .GroupBy(i => Str(i,"item_path") + "|" + Str(i,"condition_id"))
+                    .GroupBy(i => Str(i,"item_path") + "|" + Str(i,"condition_id") + "|" + Str(i,"entry_name"))
                     .Select(g => g.First())
                     .ToList();
 
