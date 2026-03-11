@@ -11,6 +11,90 @@ namespace FabricationSample.Utilities
     public static class FileHelpers
     {
         /// <summary>
+        /// Get export prefix from CurrentConfiguration and AutoCAD profile.
+        /// Parses "{ContentGroup} - {DatabaseName}" from Application.CurrentConfiguration.
+        /// Returns "{GROUP}_{DBABBREV}_{PROFILE}" e.g. "FAB_HWD20_Default".
+        /// </summary>
+        public static string GetProfilePrefix()
+        {
+            try
+            {
+                var parts = new System.Collections.Generic.List<string>();
+
+                string config = Autodesk.Fabrication.ApplicationServices.Application.CurrentConfiguration;
+                if (!string.IsNullOrEmpty(config))
+                {
+                    int separatorIndex = config.IndexOf(" - ");
+                    if (separatorIndex > 0)
+                    {
+                        string contentGroup = config.Substring(0, separatorIndex).Trim();
+                        string dbName = config.Substring(separatorIndex + 3).Trim();
+
+                        string group = contentGroup.TrimStart('_');
+                        if (group.EndsWith(" Content"))
+                            group = group.Substring(0, group.Length - " Content".Length);
+                        group = group.ToUpper();
+
+                        parts.Add(group);
+
+                        string dbAbbrev = AbbreviateDbName(dbName);
+                        if (!string.IsNullOrEmpty(dbAbbrev))
+                            parts.Add(dbAbbrev);
+                    }
+                }
+
+                string profileName = Autodesk.Fabrication.ApplicationServices.Application.CurrentProfile;
+                if (!string.IsNullOrEmpty(profileName))
+                {
+                    parts.Add(profileName.Replace(" ", "_"));
+                }
+
+                if (parts.Count > 0)
+                    return string.Join("_", parts);
+            }
+            catch { }
+            return "";
+        }
+
+        /// <summary>
+        /// Abbreviate database name to a short acronym.
+        /// "My Database 2.0" → "MD20"
+        /// Takes first letter of each alpha word (uppercase) + version digits (periods stripped).
+        /// </summary>
+        public static string AbbreviateDbName(string dbName)
+        {
+            if (string.IsNullOrEmpty(dbName)) return "";
+
+            var words = dbName.Split(new[] { ' ', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+            var abbrev = new System.Text.StringBuilder();
+
+            foreach (var word in words)
+            {
+                if (char.IsDigit(word[0]))
+                {
+                    abbrev.Append(word.Replace(".", ""));
+                }
+                else
+                {
+                    abbrev.Append(char.ToUpper(word[0]));
+                }
+            }
+
+            return abbrev.ToString();
+        }
+
+        /// <summary>
+        /// Generate a prefixed filename for SaveFileDialog.
+        /// Prepends the profile prefix to the base name if available.
+        /// </summary>
+        public static string GetPrefixedFileName(string baseName, string extension = ".csv")
+        {
+            string prefix = GetProfilePrefix();
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string name = string.IsNullOrEmpty(prefix) ? baseName : $"{prefix}_{baseName}";
+            return $"{name}_{timestamp}{extension}";
+        }
+        /// <summary>
         /// Prompt user to select an export folder using FolderBrowserDialog.
         /// </summary>
         /// <param name="title">Dialog title describing the export type</param>
