@@ -309,7 +309,9 @@ namespace FabricationSample.Services.Bridge
                                                 foreach (var row in item.ProductList.Rows)
                                                 {
                                                     string entryName = "";
+                                                    string rowDbId = "";
                                                     try { entryName = row.Name ?? ""; } catch { }
+                                                    try { rowDbId = row.DatabaseId ?? ""; } catch { }
                                                     if (!string.IsNullOrEmpty(entryName))
                                                     {
                                                         productListedNew.Add(entryName);
@@ -327,6 +329,7 @@ namespace FabricationSample.Services.Bridge
                                                         ["image_path"]     = imagePath,
                                                         ["button_image"]   = buttonImagePath,
                                                         ["entry_name"]     = entryName,
+                                                        ["database_id"]    = rowDbId,
                                                         ["condition_desc"] = condDesc,
                                                         ["greater_than"]   = gt,
                                                         ["condition_id"]   = condId,
@@ -347,6 +350,7 @@ namespace FabricationSample.Services.Bridge
                                                     ["image_path"]     = imagePath,
                                                     ["button_image"]   = buttonImagePath,
                                                     ["entry_name"]     = "",
+                                                    ["database_id"]    = "",
                                                     ["condition_desc"] = condDesc,
                                                     ["greater_than"]   = gt,
                                                     ["condition_id"]   = condId,
@@ -1095,25 +1099,50 @@ namespace FabricationSample.Services.Bridge
             SafeRead(() =>
             {
                 foreach (var svc in FabDB.Services)
-                    results.Add(new Dict { ["name"] = FixEncoding(svc.Name ?? ""), ["template"] = FixEncoding(svc.ServiceTemplate?.Name ?? "") });
+                {
+                    string svcType = "";
+                    try
+                    {
+                        if (svc.ServiceEntries != null && svc.ServiceEntries.Count > 0)
+                            svcType = string.Join(", ", svc.ServiceEntries
+                                .Select(e => e.ServiceType?.Description ?? "")
+                                .Where(s => !string.IsNullOrEmpty(s))
+                                .Distinct());
+                    }
+                    catch { }
+
+                    results.Add(new Dict
+                    {
+                        ["name"]         = FixEncoding(svc.Name ?? ""),
+                        ["group"]        = FixEncoding(svc.Group ?? ""),
+                        ["template"]     = FixEncoding(svc.ServiceTemplate?.Name ?? ""),
+                        ["service_type"] = FixEncoding(svcType),
+                    });
+                }
             });
             return Serialize(results);
         }
 
         private string HandleGetServiceItems(NameValueCollection q)
         {
-            string svcFilter = (q["service"] ?? "").ToLower();
-            int    limit     = ParseInt(q["limit"],  500);
-            int    offset    = ParseInt(q["offset"],   0);
+            string svcFilter  = (q["service"]     ?? "").ToLower();
+            string dbIdFilter = (q["database_id"] ?? "");
+            int    limit      = ParseInt(q["limit"],  500);
+            int    offset     = ParseInt(q["offset"],   0);
 
             if (!_cacheReady) return Serialize(new Dict { ["cache_ready"] = false, ["data"] = new List<Dict>(), ["total"] = -1 });
 
-            var filtered = string.IsNullOrEmpty(svcFilter)
-                ? _serviceItemsList
-                : _serviceItemsList.Where(d => Str(d,"service_name").IndexOf(svcFilter, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            var filtered = (IEnumerable<Dict>)_serviceItemsList;
 
-            int total = filtered.Count;
-            var page  = (limit <= 0 ? filtered : filtered.Skip(offset).Take(limit)).ToList();
+            if (!string.IsNullOrEmpty(svcFilter))
+                filtered = filtered.Where(d => Str(d,"service_name").IndexOf(svcFilter, StringComparison.OrdinalIgnoreCase) >= 0);
+
+            if (!string.IsNullOrEmpty(dbIdFilter))
+                filtered = filtered.Where(d => string.Equals(Str(d,"database_id"), dbIdFilter, StringComparison.OrdinalIgnoreCase));
+
+            var list  = filtered.ToList();
+            int total = list.Count;
+            var page  = (limit <= 0 ? list : list.Skip(offset).Take(limit)).ToList();
             return Serialize(new Dict { ["cache_ready"] = true, ["total"] = total, ["offset"] = offset, ["limit"] = limit, ["data"] = page });
         }
 
@@ -1389,69 +1418,67 @@ namespace FabricationSample.Services.Bridge
 
             string templateName = Str(svcItems[0], "template_name");
 
-            // Group: button_name → items
-            var buttonGroups = svcItems.GroupBy(d => Str(d, "button_name")).ToList();
-
-            // Build flat button list (tabs reconstructed from cache tab_name below)
-            var buttons = new List<Dict>();
-            foreach (var bg in buttonGroups)
-            {
-                string btnName = bg.Key;
-                var items = new List<Dict>();
-                var entryNames = new HashSet<string>();
-
-                foreach (var si in bg)
-                {
-                    string entryName = Str(si, "entry_name");
-                    if (!string.IsNullOrEmpty(entryName))
-                        entryNames.Add(entryName);
-
-                    items.Add(new Dict
-                    {
-                        ["item_path"]       = Str(si, "item_path"),
-                        ["item_folder"]     = Str(si, "item_folder"),
-                        ["image_path"]      = Str(si, "image_path"),
-                        ["entry_name"]      = entryName,
-                        ["condition_desc"]  = Str(si, "condition_desc"),
-                        ["greater_than"]    = Str(si, "greater_than"),
-                        ["less_than_eq"]    = Str(si, "less_than_eq"),
-                        ["condition_id"]    = Str(si, "condition_id"),
-                    });
-                }
-
-                // Deduplicate items by item_path + condition
-                var uniqueItems = items
-                    .GroupBy(i => Str(i,"item_path") + "|" + Str(i,"condition_id"))
-                    .Select(g => g.First())
-                    .ToList();
-
-                // Find button image (use first non-empty button_image or image_path)
-                string btnImage = bg.Select(si => Str(si,"button_image")).FirstOrDefault(s => !string.IsNullOrEmpty(s))
-                    ?? bg.Select(si => Str(si,"image_path")).FirstOrDefault(s => !string.IsNullOrEmpty(s))
-                    ?? "";
-
-                buttons.Add(new Dict
-                {
-                    ["name"]           = btnName,
-                    ["image"]          = btnImage,
-                    ["item_count"]     = uniqueItems.Count,
-                    ["product_ids"]    = string.Join(",", entryNames),
-                    ["items"]          = uniqueItems,
-                });
-            }
-
-            // Group by tab_name from cache (no live API re-query needed)
+            // Build tabs → buttons hierarchy (buttons scoped per tab to avoid
+            // cross-manufacturer merging when different tabs share button names)
             var tabs = new List<Dict>();
-            // NOTE: Tabs sorted alphabetically — Fabrication DB tab order is not preserved.
-            // If tab display order matters, capture a tab index during Phase 3 Pass 1.
             var tabGroups = svcItems.GroupBy(d => Str(d, "tab_name")).OrderBy(g => g.Key).ToList();
+            int totalButtons = 0;
 
             foreach (var tg in tabGroups)
             {
                 string tabLabel = string.IsNullOrEmpty(tg.Key) ? "All" : tg.Key;
-                var tabBtnNames = tg.Select(d => Str(d, "button_name")).Where(n => !string.IsNullOrEmpty(n)).Distinct().ToHashSet();
-                var tabButtons = buttons.Where(b => tabBtnNames.Contains(Str(b, "name"))).ToList();
+                var tabButtons = new List<Dict>();
 
+                // Group buttons within this tab only
+                var buttonGroups = tg.GroupBy(d => Str(d, "button_name")).ToList();
+                foreach (var bg in buttonGroups)
+                {
+                    string btnName = bg.Key;
+                    var items = new List<Dict>();
+                    var entryNames = new HashSet<string>();
+
+                    foreach (var si in bg)
+                    {
+                        string entryName = Str(si, "entry_name");
+                        if (!string.IsNullOrEmpty(entryName))
+                            entryNames.Add(entryName);
+
+                        items.Add(new Dict
+                        {
+                            ["item_path"]       = Str(si, "item_path"),
+                            ["item_folder"]     = Str(si, "item_folder"),
+                            ["image_path"]      = Str(si, "image_path"),
+                            ["entry_name"]      = entryName,
+                            ["database_id"]     = Str(si, "database_id"),
+                            ["condition_desc"]  = Str(si, "condition_desc"),
+                            ["greater_than"]    = Str(si, "greater_than"),
+                            ["less_than_eq"]    = Str(si, "less_than_eq"),
+                            ["condition_id"]    = Str(si, "condition_id"),
+                        });
+                    }
+
+                    // Deduplicate items by item_path + condition + entry_name (preserve different sizes)
+                    var uniqueItems = items
+                        .GroupBy(i => Str(i,"item_path") + "|" + Str(i,"condition_id") + "|" + Str(i,"entry_name"))
+                        .Select(g => g.First())
+                        .ToList();
+
+                    // Find button image (use first non-empty button_image or image_path)
+                    string btnImage = bg.Select(si => Str(si,"button_image")).FirstOrDefault(s => !string.IsNullOrEmpty(s))
+                        ?? bg.Select(si => Str(si,"image_path")).FirstOrDefault(s => !string.IsNullOrEmpty(s))
+                        ?? "";
+
+                    tabButtons.Add(new Dict
+                    {
+                        ["name"]           = btnName,
+                        ["image"]          = btnImage,
+                        ["item_count"]     = uniqueItems.Count,
+                        ["product_ids"]    = string.Join(",", entryNames),
+                        ["items"]          = uniqueItems,
+                    });
+                }
+
+                totalButtons += tabButtons.Count;
                 tabs.Add(new Dict
                 {
                     ["name"]         = tabLabel,
@@ -1463,12 +1490,43 @@ namespace FabricationSample.Services.Bridge
             // Fallback if no tab_name data present (pre-cache data)
             if (!tabs.Any())
             {
-                tabs.Add(new Dict
+                var allButtons = new List<Dict>();
+                var buttonGroups = svcItems.GroupBy(d => Str(d, "button_name")).ToList();
+                foreach (var bg in buttonGroups)
                 {
-                    ["name"]         = "All",
-                    ["button_count"] = buttons.Count,
-                    ["buttons"]      = buttons,
-                });
+                    string btnName = bg.Key;
+                    var items = new List<Dict>();
+                    var entryNames = new HashSet<string>();
+                    foreach (var si in bg)
+                    {
+                        string entryName = Str(si, "entry_name");
+                        if (!string.IsNullOrEmpty(entryName)) entryNames.Add(entryName);
+                        items.Add(new Dict
+                        {
+                            ["item_path"]       = Str(si, "item_path"),
+                            ["item_folder"]     = Str(si, "item_folder"),
+                            ["image_path"]      = Str(si, "image_path"),
+                            ["entry_name"]      = entryName,
+                            ["database_id"]     = Str(si, "database_id"),
+                            ["condition_desc"]  = Str(si, "condition_desc"),
+                            ["greater_than"]    = Str(si, "greater_than"),
+                            ["less_than_eq"]    = Str(si, "less_than_eq"),
+                            ["condition_id"]    = Str(si, "condition_id"),
+                        });
+                    }
+                    var uniqueItems = items
+                        .GroupBy(i => Str(i,"item_path") + "|" + Str(i,"condition_id") + "|" + Str(i,"entry_name"))
+                        .Select(g => g.First()).ToList();
+                    string btnImage = bg.Select(si => Str(si,"button_image")).FirstOrDefault(s => !string.IsNullOrEmpty(s))
+                        ?? bg.Select(si => Str(si,"image_path")).FirstOrDefault(s => !string.IsNullOrEmpty(s)) ?? "";
+                    allButtons.Add(new Dict
+                    {
+                        ["name"] = btnName, ["image"] = btnImage, ["item_count"] = uniqueItems.Count,
+                        ["product_ids"] = string.Join(",", entryNames), ["items"] = uniqueItems,
+                    });
+                }
+                totalButtons = allButtons.Count;
+                tabs.Add(new Dict { ["name"] = "All", ["button_count"] = allButtons.Count, ["buttons"] = allButtons });
             }
 
             return Serialize(new Dict
@@ -1477,7 +1535,7 @@ namespace FabricationSample.Services.Bridge
                 ["service_name"]  = svcName,
                 ["template_name"] = templateName,
                 ["tab_count"]     = tabs.Count,
-                ["button_count"]  = buttons.Count,
+                ["button_count"]  = totalButtons,
                 ["item_count"]    = svcItems.Count,
                 ["tabs"]          = tabs,
             });
