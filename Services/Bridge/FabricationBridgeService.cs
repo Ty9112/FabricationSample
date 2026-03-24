@@ -543,7 +543,10 @@ namespace FabricationSample.Services.Bridge
                                 }
                                 catch { }
 
-                                // Collect connector info
+                                // Collect connector info with full geometry vectors
+                                // Direction + Width + Depth form a complete 3x3 rotation matrix
+                                // for each connector's local coordinate frame (used by ifc-dedup.py
+                                // for exact placement transforms instead of mesh-based rotation recovery)
                                 var connectors = new List<Dict>();
                                 try
                                 {
@@ -553,11 +556,25 @@ namespace FabricationSample.Services.Bridge
                                         {
                                             var conn = item.Connectors[ci];
                                             if (conn == null) continue;
-                                            connectors.Add(new Dict
+                                            var cd = new Dict
                                             {
                                                 ["index"]     = ci,
                                                 ["is_locked"] = conn.IsLocked,
-                                            });
+                                            };
+                                            try
+                                            {
+                                                var ep  = item.GetConnectorEndPoint(ci);
+                                                var dir = item.GetConnectorDirectionVector(ci);
+                                                var w   = item.GetConnectorWidthVector(ci);
+                                                var dep = item.GetConnectorDepthVector(ci);
+                                                cd["endpoint"]  = new Dict { ["x"] = Math.Round(ep.X, 6),  ["y"] = Math.Round(ep.Y, 6),  ["z"] = Math.Round(ep.Z, 6) };
+                                                cd["direction"] = new Dict { ["x"] = Math.Round(dir.X, 6), ["y"] = Math.Round(dir.Y, 6), ["z"] = Math.Round(dir.Z, 6) };
+                                                cd["width"]     = new Dict { ["x"] = Math.Round(w.X, 6),   ["y"] = Math.Round(w.Y, 6),   ["z"] = Math.Round(w.Z, 6) };
+                                                cd["depth"]     = new Dict { ["x"] = Math.Round(dep.X, 6), ["y"] = Math.Round(dep.Y, 6), ["z"] = Math.Round(dep.Z, 6) };
+                                                cd["conn_type"] = item.GetConnectorConnectionType(ci).ToString();
+                                            }
+                                            catch { /* geometry not available for this connector */ }
+                                            connectors.Add(cd);
                                         }
                                     }
                                 }
