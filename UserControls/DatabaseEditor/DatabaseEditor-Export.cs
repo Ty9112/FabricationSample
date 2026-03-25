@@ -73,9 +73,8 @@ namespace FabricationSample.UserControls.DatabaseEditor
                             return;
                         }
 
-                        // Create timestamped subfolder
-                        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                        string exportFolder = Path.Combine(outputFolder, $"PriceTables_{timestamp}");
+                        // Create prefixed timestamped subfolder
+                        string exportFolder = Path.Combine(outputFolder, FileHelpers.GetPrefixedFileName("PriceTables"));
 
                         // Initialize service with selected tables
                         _priceExportService = new PriceTablesExportService();
@@ -187,9 +186,8 @@ namespace FabricationSample.UserControls.DatabaseEditor
                             return;
                         }
 
-                        // Create timestamped subfolder
-                        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                        string exportFolder = Path.Combine(outputFolder, $"InstallationTimes_{timestamp}");
+                        // Create prefixed timestamped subfolder
+                        string exportFolder = Path.Combine(outputFolder, FileHelpers.GetPrefixedFileName("InstallationTimes"));
 
                         // Initialize service with selected tables
                         _installExportService = new InstallationTimesExportService();
