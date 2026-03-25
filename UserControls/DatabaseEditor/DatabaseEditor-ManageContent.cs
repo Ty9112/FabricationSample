@@ -492,6 +492,157 @@ namespace FabricationSample.UserControls.DatabaseEditor
             FabricationAPIExamples.AddItemToJob(_currentContentItem);
         }
 
+        private void btnCloneItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentContentItem == null) return;
+
+            try
+            {
+                string sourcePath = FabricationManager.CurrentLoadedItemPath;
+                if (string.IsNullOrEmpty(sourcePath) || !File.Exists(sourcePath))
+                {
+                    MessageBox.Show("No source item path available. Please open an item first.",
+                        "Clone Item", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                string sourceDir = Path.GetDirectoryName(sourcePath);
+                string sourceNameNoExt = Path.GetFileNameWithoutExtension(sourcePath);
+                string sourceTxtPath = Path.Combine(sourceDir, sourceNameNoExt + ".Txt");
+                string sourcePngPath = Path.Combine(sourceDir, sourceNameNoExt + ".png");
+
+                // Read source product list
+                List<string[]> sourceEntries = new List<string[]>();
+                string sourceDbIdBase = "";
+                if (File.Exists(sourceTxtPath))
+                {
+                    var lines = File.ReadAllLines(sourceTxtPath);
+                    for (int i = 1; i < lines.Length; i++)
+                    {
+                        if (string.IsNullOrWhiteSpace(lines[i])) continue;
+                        var parts = lines[i].Split(',');
+                        if (parts.Length >= 4)
+                            sourceEntries.Add(parts);
+                    }
+
+                    if (sourceEntries.Count > 0)
+                    {
+                        string firstId = sourceEntries[0][3].Trim();
+                        int lastDash = firstId.LastIndexOf('-');
+                        if (lastDash > 0)
+                            sourceDbIdBase = firstId.Substring(0, lastDash);
+                    }
+                }
+
+                // Prompt for new item name
+                string defaultName = sourceNameNoExt.Replace("Standard", "Schedule 10S");
+                string newItemName = ShowInputDialog(
+                    "Clone Item — New Name",
+                    $"Source: {sourceNameNoExt}\n" +
+                    $"Product list: {sourceEntries.Count} entries\n" +
+                    $"DatabaseId base: {sourceDbIdBase}\n\n" +
+                    "New item name:",
+                    defaultName);
+
+                if (string.IsNullOrWhiteSpace(newItemName)) return;
+
+                // Prompt for new DatabaseId base
+                string newDbIdBase = ShowInputDialog(
+                    "Clone Item — New DatabaseId Base",
+                    $"Source: {sourceDbIdBase}-0001 through -{sourceEntries.Count:D4}\n\n" +
+                    "New DatabaseId base (e.g., MDSK_JOINT_000128):",
+                    "");
+
+                if (string.IsNullOrWhiteSpace(newDbIdBase)) return;
+
+                // Check target files
+                string targetItmPath = Path.Combine(sourceDir, newItemName + ".itm");
+                string targetTxtPath = Path.Combine(sourceDir, newItemName + ".Txt");
+                if (File.Exists(targetItmPath) || File.Exists(targetTxtPath))
+                {
+                    if (MessageBox.Show($"Target files already exist in:\n{sourceDir}\n\nOverwrite?",
+                        "Clone Item", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                        return;
+                }
+
+                // Clone the .itm
+                var saveResult = ContentManager.SaveItemAs(_currentContentItem, sourceDir, newItemName, true);
+                if (saveResult.Status != ResultStatus.Succeeded)
+                {
+                    MessageBox.Show($"Failed to save cloned item: {saveResult.Status}",
+                        "Clone Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Generate new product list .Txt
+                if (sourceEntries.Count > 0)
+                {
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine("Name,DIM1,Order,ID");
+                    for (int i = 0; i < sourceEntries.Count; i++)
+                    {
+                        string newDbId = $"{newDbIdBase}-{(i + 1):D4}";
+                        sb.AppendLine($"{sourceEntries[i][0].Trim()},{sourceEntries[i][1].Trim()},{sourceEntries[i][2].Trim()},{newDbId}");
+                    }
+                    File.WriteAllText(targetTxtPath, sb.ToString());
+                }
+
+                // Copy .png icon if it exists
+                if (File.Exists(sourcePngPath))
+                {
+                    string targetPngPath = Path.Combine(sourceDir, newItemName + ".png");
+                    // Only copy if pre-cloned icon doesn't already exist
+                    if (!File.Exists(targetPngPath))
+                        File.Copy(sourcePngPath, targetPngPath, true);
+                }
+
+                MessageBox.Show(
+                    $"Clone complete!\n\n" +
+                    $"Created: {newItemName}.itm\n" +
+                    $"Product list: {sourceEntries.Count} entries\n" +
+                    $"DatabaseIds: {newDbIdBase}-0001 through -{sourceEntries.Count:D4}\n\n" +
+                    "Refresh the item folder to see the new item.",
+                    "Clone Item", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Refresh the folder view
+                if (_currentFolder != null)
+                    OnContentFolderSelected(_currentFolder);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Clone error: {ex.Message}", "Clone Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Simple WinForms input dialog for clone prompts.
+        /// </summary>
+        private string ShowInputDialog(string title, string prompt, string defaultValue)
+        {
+            using (var form = new System.Windows.Forms.Form())
+            {
+                form.Text = title;
+                form.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+                form.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+                form.MaximizeBox = false;
+                form.MinimizeBox = false;
+                form.Width = 450;
+                form.Height = 220;
+
+                var label = new System.Windows.Forms.Label { Left = 12, Top = 12, Width = 410, Height = 100, Text = prompt };
+                var textBox = new System.Windows.Forms.TextBox { Left = 12, Top = 115, Width = 410, Text = defaultValue ?? "" };
+                var okBtn = new System.Windows.Forms.Button { Text = "OK", Left = 260, Top = 148, Width = 75, DialogResult = System.Windows.Forms.DialogResult.OK };
+                var cancelBtn = new System.Windows.Forms.Button { Text = "Cancel", Left = 345, Top = 148, Width = 75, DialogResult = System.Windows.Forms.DialogResult.Cancel };
+
+                form.Controls.AddRange(new System.Windows.Forms.Control[] { label, textBox, okBtn, cancelBtn });
+                form.AcceptButton = okBtn;
+                form.CancelButton = cancelBtn;
+
+                return form.ShowDialog() == System.Windows.Forms.DialogResult.OK ? textBox.Text.Trim() : null;
+            }
+        }
+
         #region Product List
 
         private void dgFolderContents_SelectionChanged(object sender, SelectionChangedEventArgs e)

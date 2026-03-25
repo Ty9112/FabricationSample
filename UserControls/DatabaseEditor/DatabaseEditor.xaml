@@ -1395,7 +1395,8 @@
                                 <!-- Action buttons -->
                                 <StackPanel Orientation="Horizontal" Margin="5,5,0,5">
                                     <Button Content="Save Changes" Width="120" Height="24" Click="btnSaveContentItem_Click" Margin="0,0,10,0"/>
-                                    <Button Content="Add to Job" Width="120" Height="24" Click="btnAddContentToJob_Click"/>
+                                    <Button Content="Add to Job" Width="120" Height="24" Click="btnAddContentToJob_Click" Margin="0,0,10,0"/>
+                                    <Button Content="Clone Item..." Width="120" Height="24" Click="btnCloneItem_Click" ToolTip="Clone this item with new DatabaseIds and product list"/>
                                 </StackPanel>
                             </StackPanel>
                         </ScrollViewer>

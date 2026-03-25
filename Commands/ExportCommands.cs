@@ -83,74 +83,7 @@ namespace FabricationSample.Commands
         /// </summary>
         private static string GetProfilePrefix()
         {
-            try
-            {
-                var parts = new System.Collections.Generic.List<string>();
-
-                // Parse CurrentConfiguration: "{ContentGroup} - {DatabaseName}"
-                string config = Autodesk.Fabrication.ApplicationServices.Application.CurrentConfiguration;
-                if (!string.IsNullOrEmpty(config))
-                {
-                    int separatorIndex = config.IndexOf(" - ");
-                    if (separatorIndex > 0)
-                    {
-                        string contentGroup = config.Substring(0, separatorIndex).Trim();
-                        string dbName = config.Substring(separatorIndex + 3).Trim();
-
-                        // Content group: strip "_" prefix and " Content" suffix → "FAB", "BIM"
-                        string group = contentGroup.TrimStart('_');
-                        if (group.EndsWith(" Content"))
-                            group = group.Substring(0, group.Length - " Content".Length);
-                        group = group.ToUpper();
-
-                        parts.Add(group);
-
-                        string dbAbbrev = AbbreviateDbName(dbName);
-                        if (!string.IsNullOrEmpty(dbAbbrev))
-                            parts.Add(dbAbbrev);
-                    }
-                }
-
-                // AutoCAD profile name (e.g., Default, GLOBAL, ProjectAlpha)
-                string profileName = Autodesk.Fabrication.ApplicationServices.Application.CurrentProfile;
-                if (!string.IsNullOrEmpty(profileName))
-                {
-                    parts.Add(profileName.Replace(" ", "_"));
-                }
-
-                if (parts.Count > 0)
-                    return string.Join("_", parts);
-            }
-            catch { }
-            return "";
-        }
-
-        /// <summary>
-        /// Abbreviate database name to a short acronym.
-        /// "My Database 2.0" → "MD20"
-        /// Takes first letter of each alpha word (uppercase) + version digits (periods stripped).
-        /// </summary>
-        private static string AbbreviateDbName(string dbName)
-        {
-            if (string.IsNullOrEmpty(dbName)) return "";
-
-            var words = dbName.Split(new[] { ' ', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
-            var abbrev = new System.Text.StringBuilder();
-
-            foreach (var word in words)
-            {
-                if (char.IsDigit(word[0]))
-                {
-                    // Version number: strip periods, append digits
-                    abbrev.Append(word.Replace(".", ""));
-                }
-                else
-                {
-                    abbrev.Append(char.ToUpper(word[0]));
-                }
-            }
-
-            return abbrev.ToString();
+            return FileHelpers.GetProfilePrefix();
         }
 
         /// <summary>

@@ -274,8 +274,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     saveDialog.Title = "Export Item Data";
                     saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
                     saveDialog.DefaultExt = "csv";
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    saveDialog.FileName = $"ItemData_{timestamp}.csv";
+                    saveDialog.FileName = FileHelpers.GetPrefixedFileName("ItemData");
 
                     if (saveDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -379,8 +378,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     saveDialog.Title = "Export Product Database Grid";
                     saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
                     saveDialog.DefaultExt = "csv";
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    saveDialog.FileName = $"ProductDatabase_{timestamp}.csv";
+                    saveDialog.FileName = FileHelpers.GetPrefixedFileName("ProductDatabase");
 
                     if (saveDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -477,8 +475,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     saveDialog.Title = "Export Full Product Info (GetProductInfo)";
                     saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
                     saveDialog.DefaultExt = "csv";
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    saveDialog.FileName = $"ProductInfo_{timestamp}.csv";
+                    saveDialog.FileName = FileHelpers.GetPrefixedFileName("ProductInfo");
 
                     if (saveDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -565,8 +562,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     saveDialog.Title = "Export Supplier Discounts";
                     saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
                     saveDialog.DefaultExt = "csv";
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    saveDialog.FileName = $"SupplierDiscounts_{timestamp}.csv";
+                    saveDialog.FileName = FileHelpers.GetPrefixedFileName("SupplierDiscounts");
 
                     if (saveDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -649,7 +645,6 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     saveDialog.Title = "Export Button Report";
                     saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
                     saveDialog.DefaultExt = "csv";
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
                     // Create filename based on service selection
                     string filePrefix;
@@ -675,7 +670,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                         filePrefix = "MultipleServices";
                     }
 
-                    saveDialog.FileName = $"{filePrefix}_{timestamp}.csv";
+                    saveDialog.FileName = FileHelpers.GetPrefixedFileName(filePrefix);
 
                     if (saveDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -796,7 +791,6 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     saveDialog.Title = "Export Button Report by Template";
                     saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
                     saveDialog.DefaultExt = "csv";
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
                     // Create filename based on template selection
                     string filePrefix;
@@ -822,7 +816,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                         filePrefix = "MultipleTemplates";
                     }
 
-                    saveDialog.FileName = $"{filePrefix}_{timestamp}.csv";
+                    saveDialog.FileName = FileHelpers.GetPrefixedFileName(filePrefix);
 
                     if (saveDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -936,8 +930,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     saveDialog.Title = "Export Item Statuses";
                     saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
                     saveDialog.DefaultExt = "csv";
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    saveDialog.FileName = $"ItemStatuses_{timestamp}.csv";
+                    saveDialog.FileName = FileHelpers.GetPrefixedFileName("ItemStatuses");
 
                     if (saveDialog.ShowDialog() == DialogResult.OK)
                     {
@@ -988,8 +981,7 @@ namespace FabricationSample.UserControls.DatabaseEditor
                     saveDialog.Title = "Export Job Statuses";
                     saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
                     saveDialog.DefaultExt = "csv";
-                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                    saveDialog.FileName = $"JobStatuses_{timestamp}.csv";
+                    saveDialog.FileName = FileHelpers.GetPrefixedFileName("JobStatuses");
 
                     if (saveDialog.ShowDialog() == DialogResult.OK)
                     {
