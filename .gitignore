@@ -380,3 +380,4 @@ Installer/
 [Bb]in/
 *.msi
 *.exe
+graphify-out/
