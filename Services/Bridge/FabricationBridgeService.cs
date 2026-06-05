@@ -309,12 +309,20 @@ namespace FabricationSample.Services.Bridge
                                                 foreach (var row in item.ProductList.Rows)
                                                 {
                                                     string entryName = "";
+                                                    string rowDbId   = "";
                                                     try { entryName = row.Name ?? ""; } catch { }
-                                                    if (!string.IsNullOrEmpty(entryName))
+                                                    try { rowDbId   = row.DatabaseId ?? ""; } catch { }
+                                                    // Key the listed set + image map by DatabaseId, not entry name.
+                                                    // Entry names are sizes ("1/2", "3/4") shared across thousands of
+                                                    // products — name keys collapse the map to a few colliding
+                                                    // entries, so is_product_listed (checked against pd.Id) and the
+                                                    // detail route's image lookup (keyed by product id) never matched.
+                                                    string listKey = !string.IsNullOrEmpty(rowDbId) ? rowDbId : entryName;
+                                                    if (!string.IsNullOrEmpty(listKey))
                                                     {
-                                                        productListedNew.Add(entryName);
-                                                        if (!string.IsNullOrEmpty(imagePath) && !productImageMapNew.ContainsKey(entryName))
-                                                            productImageMapNew[entryName] = imagePath;
+                                                        productListedNew.Add(listKey);
+                                                        if (!string.IsNullOrEmpty(imagePath) && !productImageMapNew.ContainsKey(listKey))
+                                                            productImageMapNew[listKey] = imagePath;
                                                     }
                                                     tmplItems.Add(new Dict
                                                     {
@@ -600,8 +608,11 @@ namespace FabricationSample.Services.Bridge
                 _jobItemsList        = jobItemsNew;
                 _jobItemIndex        = jobItemIndexNew;
                 _cacheBuiltAt        = DateTime.UtcNow;
-                _cacheReady          = true;
+                // Clear "building" BEFORE setting "ready" — the reverse order let a
+                // status poll land between the two writes and observe the
+                // contradictory state cache_ready && cache_building.
                 _cacheBuilding       = false;
+                _cacheReady          = true;
 
                 WriteMessage($"[FabBridge] Cache ready: {allProductsNew.Count:N0} products, " +
                     $"{priceEntriesNew.Count:N0} price entries ({priceCacheNew.Count:N0} priced), " +
@@ -981,7 +992,7 @@ namespace FabricationSample.Services.Bridge
                 {
                     if (!string.IsNullOrEmpty(srch))
                     {
-                        string blob = Str(p,"description") + " " + Str(p,"product_name") + " " + Str(p,"size");
+                        string blob = Str(p,"id") + " " + Str(p,"description") + " " + Str(p,"product_name") + " " + Str(p,"size");
                         if (blob.IndexOf(srch, StringComparison.OrdinalIgnoreCase) < 0) return false;
                     }
                     if (!string.IsNullOrEmpty(mfr)     && Str(p,"manufacturer").IndexOf(mfr,     StringComparison.OrdinalIgnoreCase) < 0) return false;
@@ -1013,7 +1024,7 @@ namespace FabricationSample.Services.Bridge
                 {
                     if (!string.IsNullOrEmpty(srch))
                     {
-                        string blob = (pd.Description ?? "") + " " + (pd.ProductName ?? "") + " " + (pd.Size ?? "");
+                        string blob = (pd.Id ?? "") + " " + (pd.Description ?? "") + " " + (pd.ProductName ?? "") + " " + (pd.Size ?? "");
                         if (blob.IndexOf(srch, StringComparison.OrdinalIgnoreCase) < 0) continue;
                     }
                     if (!string.IsNullOrEmpty(mfr)     && (pd.Manufacturer    ?? "").IndexOf(mfr,     StringComparison.OrdinalIgnoreCase) < 0) continue;
@@ -1046,7 +1057,7 @@ namespace FabricationSample.Services.Bridge
             {
                 if (!string.IsNullOrEmpty(srch))
                 {
-                    string blob = Str(p,"description") + " " + Str(p,"product_name") + " " + Str(p,"size");
+                    string blob = Str(p,"id") + " " + Str(p,"description") + " " + Str(p,"product_name") + " " + Str(p,"size");
                     if (blob.IndexOf(srch, StringComparison.OrdinalIgnoreCase) < 0) return false;
                 }
                 if (!string.IsNullOrEmpty(mfr)     && Str(p,"manufacturer").IndexOf(mfr,     StringComparison.OrdinalIgnoreCase) < 0) return false;
@@ -1062,6 +1073,12 @@ namespace FabricationSample.Services.Bridge
 
         private string HandleGetProduct(string segment)
         {
+            // Path segments arrive percent-encoded (HttpListener does not decode them) —
+            // many product ids contain spaces (e.g. "VENDOR_PFX 12345-A-0001"), so without
+            // this decode the index lookup misses and the route 404s. Sibling handlers
+            // (supplier-ids, product PUT, service routes) already unescape.
+            segment = Uri.UnescapeDataString(segment);
+
             // Prefer cached product index (fast, thread-safe) over live API iteration
             if (_cacheReady && _productIndex.TryGetValue(segment, out var cached))
             {
@@ -1347,6 +1364,10 @@ namespace FabricationSample.Services.Bridge
 
         private string HandleGetJobItem(string uniqueId)
         {
+            // Decode percent-encoding for parity with the /swap sibling route, which
+            // already unescapes (GUID ids are space-free today, but keep them consistent).
+            uniqueId = Uri.UnescapeDataString(uniqueId);
+
             if (!_cacheReady)
                 return Serialize(new Dict { ["cache_ready"] = false, ["error"] = "cache not ready" });
 
