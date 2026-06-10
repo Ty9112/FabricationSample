@@ -178,7 +178,16 @@ namespace FabricationSample.Services.Export
                                 {
                                     foreach (var row in item.ProductList.Rows.ToList())
                                     {
-                                        try { if (!string.IsNullOrEmpty(row.Name)) productListedNames.Add(row.Name); } catch { }
+                                        try
+                                        {
+                                            // Key by DatabaseId, not entry name — row names are sizes
+                                            // ("1/2", "3/4") shared across products and never match the
+                                            // productDef.Id this set is checked against.
+                                            string rowDbId = null;
+                                            try { rowDbId = row.DatabaseId; } catch { }
+                                            if (!string.IsNullOrEmpty(rowDbId)) productListedNames.Add(rowDbId);
+                                        }
+                                        catch { }
                                     }
                                 }
                             }
